@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"fast-rrytm/internal/sitegen"
 )
@@ -40,7 +39,7 @@ func main() {
 		BaseURL:     index.BaseURL,
 		Mode:        index.Mode,
 	}
-	if err := sitegen.WriteHTML(filepath.Join(outDir, "index.html"), meta); err != nil {
+	if err := sitegen.WriteSite(outDir, meta); err != nil {
 		exitErr(err)
 	}
 }

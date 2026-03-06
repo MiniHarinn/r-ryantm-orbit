@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path"
@@ -19,7 +20,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-//go:embed templates/index.html
+//go:embed templates/index.html templates/assets/*
 var templateFS embed.FS
 
 var (
@@ -491,11 +492,40 @@ func WriteSite(path string, meta SiteMeta) error {
 	if err := EnsureDir(path); err != nil {
 		return err
 	}
+	if err := writeAssets(path); err != nil {
+		return err
+	}
 	return WriteHTML(pathJoin(path, "index.html"), meta)
 }
 
 func pathJoin(dir, file string) string {
 	return path.Join(dir, file)
+}
+
+func writeAssets(dir string) error {
+	assetsDir := "templates/assets"
+	entries, err := fs.ReadDir(templateFS, assetsDir)
+	if err != nil {
+		return err
+	}
+	outputDir := pathJoin(dir, "assets")
+	if err := EnsureDir(outputDir); err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		data, err := templateFS.ReadFile(path.Join(assetsDir, name))
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(pathJoin(outputDir, name), data, 0o644); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func WriteChunkedData(dir string, payload SiteData, chunkSize int) (SiteIndex, error) {
