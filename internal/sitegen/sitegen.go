@@ -78,6 +78,8 @@ type SiteMeta struct {
 	GeneratedAt string
 	BaseURL     string
 	Mode        string
+	RepoStarsPrimary   string
+	RepoStarsSecondary string
 }
 
 type Options struct {
@@ -164,6 +166,8 @@ func WriteHTML(path string, meta SiteMeta) error {
 		"{{.GeneratedAt}}", meta.GeneratedAt,
 		"{{.BaseURL}}", meta.BaseURL,
 		"{{.Mode}}", meta.Mode,
+		"{{.RepoStarsPrimary}}", meta.RepoStarsPrimary,
+		"{{.RepoStarsSecondary}}", meta.RepoStarsSecondary,
 	)
 
 	output := replacer.Replace(string(tplData))
