@@ -476,7 +476,13 @@
           card.innerHTML = `
             <div class=\"flex items-start justify-between gap-3\">
               <div class=\"min-w-0\">
-                <h3 class=\"text-base font-semibold break-words\">${safePackage}</h3>
+                <h3 class=\"text-base font-semibold\">
+                  <button type=\"button\" class=\"text-left inline-flex items-center gap-2 hover:text-slate-100 transition\" data-copy-package=\"${safePackage}\" aria-label=\"Copy package name\">
+                    <span class=\"break-words\">${safePackage}</span>
+                    <span class=\"text-[10px] uppercase tracking-[0.2em] text-slate-500 border border-slate-600/50 px-2 py-0.5 rounded-full hidden\" data-copy-feedback>Copied</span>
+                    <i class=\"ti ti-copy text-base text-slate-500\"></i>
+                  </button>
+                </h3>
                 <div class=\"text-xs text-slate-400 font-mono\">${safeDate}</div>
               </div>
               <div class=\"text-[11px] uppercase tracking-[0.22em] text-slate-200 border border-slate-600/40 px-2 py-1 rounded-full bg-night-900/70\">${meta.label}</div>
@@ -619,6 +625,56 @@
         });
         await Promise.all(fetches);
       }
+
+      function copyText(value) {
+        if (navigator.clipboard && window.isSecureContext) {
+          return navigator.clipboard.writeText(value);
+        }
+        return new Promise((resolve, reject) => {
+          const textarea = document.createElement("textarea");
+          textarea.value = value;
+          textarea.setAttribute("readonly", "");
+          textarea.style.position = "absolute";
+          textarea.style.left = "-9999px";
+          document.body.appendChild(textarea);
+          textarea.select();
+          const success = document.execCommand("copy");
+          document.body.removeChild(textarea);
+          if (success) {
+            resolve();
+          } else {
+            reject(new Error("Copy failed"));
+          }
+        });
+      }
+
+      const copyTimers = new WeakMap();
+      const cards = document.getElementById("cards");
+      cards.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-copy-package]");
+        if (!button) return;
+        const value = button.getAttribute("data-copy-package");
+        if (!value) return;
+        copyText(value).then(() => {
+          const feedback = button.querySelector("[data-copy-feedback]");
+          if (feedback) {
+            feedback.classList.remove("hidden");
+          }
+          const previousTimer = copyTimers.get(button);
+          if (previousTimer) {
+            clearTimeout(previousTimer);
+          }
+          const timer = setTimeout(() => {
+            if (feedback) {
+              feedback.classList.add("hidden");
+            }
+            copyTimers.delete(button);
+          }, 1200);
+          copyTimers.set(button, timer);
+        }).catch(() => {
+          // Silent fallback if clipboard is blocked.
+        });
+      });
 
       let searchTimer = null;
       document.getElementById("searchInput").addEventListener("input", () => {
