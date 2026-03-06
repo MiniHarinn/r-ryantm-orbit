@@ -7,64 +7,81 @@
     <meta name="description" content="Status dashboard for nixpkgs-update logs." />
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
     <script>
       tailwind.config = {
         darkMode: "class",
         theme: {
           extend: {
             fontFamily: {
-              display: ["Syne", "ui-sans-serif", "system-ui"],
+              display: ["Space Grotesk", "ui-sans-serif", "system-ui"],
               mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular"],
             },
             colors: {
-              ink: {
-                950: "#05060a",
-                900: "#0a0e17",
-                800: "#121826",
-                700: "#1a2336",
+              night: {
+                950: "#050607",
+                900: "#0b1016",
+                850: "#101826",
+                800: "#131c2c",
+                700: "#19233a",
               },
-              tide: {
-                50: "#e8fbff",
-                200: "#8ce5ff",
-                400: "#2ecbff",
-                600: "#1a6cff",
+              pulse: {
+                50: "#e9fcff",
+                200: "#9ce9ff",
+                400: "#34d3ff",
+                600: "#3b82f6",
               },
-              ember: "#ff6b6b",
-              jade: "#38f2b9",
-              gold: "#ffc857",
+              bloom: {
+                50: "#ffeef6",
+                300: "#ff92d2",
+                500: "#ff5ba7",
+                700: "#e03683",
+              },
+              ember: "#ff6363",
+              jade: "#41f1b6",
+              gold: "#f7c86a",
             },
             boxShadow: {
-              panel: "0 25px 60px rgba(5,6,10,0.65)",
-              glow: "0 0 0 1px rgba(148,163,184,0.2), 0 12px 40px rgba(15,23,42,0.6)",
+              panel: "0 30px 80px rgba(4, 6, 11, 0.72)",
+              glow: "0 0 0 1px rgba(148, 163, 184, 0.18), 0 20px 60px rgba(15, 23, 42, 0.6)",
+              pill: "0 8px 24px rgba(8, 12, 22, 0.45)",
             },
             keyframes: {
               rise: {
                 "0%": { transform: "translateY(18px)", opacity: "0" },
                 "100%": { transform: "translateY(0)", opacity: "1" },
               },
+              floaty: {
+                "0%, 100%": { transform: "translateY(0px)" },
+                "50%": { transform: "translateY(-8px)" },
+              },
             },
             animation: {
               rise: "rise 0.6s ease forwards",
+              floaty: "floaty 8s ease-in-out infinite",
             },
           },
         },
       };
     </script>
     <style>
-      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap");
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap");
       :root { color-scheme: dark; }
       body {
-        background:
-          linear-gradient(170deg, #05060a 0%, #0b1220 45%, #0f172a 100%);
+        background-color: #0b1016;
+        background-image:
+          linear-gradient(0deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 42px 42px;
       }
       .mesh {
         position: fixed;
         inset: 0;
         pointer-events: none;
-        opacity: 0.3;
+        opacity: 0.35;
         background-image:
-          radial-gradient(circle at 1px 1px, rgba(148,163,184,0.2) 1px, transparent 0);
-        background-size: 36px 36px;
+          radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.2) 1px, transparent 0);
+        background-size: 42px 42px;
       }
       .noise {
         position: fixed;
@@ -81,26 +98,37 @@
     <div class="noise"></div>
 
     <main class="relative max-w-7xl mx-auto px-6 py-10">
-      <header class="grid gap-6 lg:grid-cols-[1fr_1.15fr]">
-        <div class="space-y-6">
-          <div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-tide-200/80">
-            <span class="h-px w-10 bg-tide-400/80"></span>
+      <header class="grid gap-8 lg:grid-cols-[1fr_1.2fr] items-start">
+        <div class="space-y-7">
+          <div class="inline-flex items-center gap-3 text-xs uppercase tracking-[0.35em] text-pulse-200/80">
+            <span class="h-px w-10 bg-pulse-400/80"></span>
             nixpkgs-update dashboard
           </div>
           <h1 class="text-4xl md:text-6xl font-semibold leading-tight">
-            r-ryantm's traces at glances.
+            r-ryantm's package orbit.
           </h1>
-          <p class="text-slate-300 max-w-2xl">
-            Track nixpkgs-update runs in one place. Filter by status, search by package, and open the raw logs when something fails.
+          <p class="text-slate-300 max-w-2xl text-lg">
+            Track nixpkgs-update runs in one place. Filter by status, search by package, and open raw logs when something fails.
           </p>
+          <div class="flex flex-wrap gap-3 text-xs text-slate-300">
+            <a class="px-3 py-2 rounded-full border border-slate-600/40 bg-night-900/70 shadow-pill hover:bg-night-800/70 transition inline-flex items-center gap-2" href="https://github.com/NixOS/nixpkgs" target="_blank" rel="noopener">
+              <i class="ti ti-brand-github text-base text-slate-300"></i>
+              <span class="text-slate-400">GitHub</span>
+              <span class="text-slate-100">nixpkgs</span>
+              <span class="text-gold">★ --</span>
+            </a>
+          </div>
         </div>
-        <div class="rounded-[32px] border border-slate-600/40 bg-ink-800/70 p-6 shadow-panel">
+        <div class="rounded-[32px] border border-slate-600/40 bg-night-800/70 p-6 shadow-panel">
           <div class="flex flex-col gap-2">
-            <div class="text-xs uppercase tracking-[0.3em] text-slate-400">Status snapshot</div>
+            <div class="text-xs uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2">
+              <i class="ti ti-activity text-base text-slate-500"></i>
+              Status snapshot
+            </div>
             <div class="text-2xl font-semibold">Fleet overview</div>
           </div>
           <div id="stats" class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"></div>
-          <div class="mt-6 rounded-2xl border border-slate-600/30 bg-ink-900/70 p-4 text-xs text-slate-400 font-mono flex flex-col gap-2">
+          <div class="mt-6 rounded-2xl border border-slate-600/30 bg-night-900/70 p-4 text-xs text-slate-400 font-mono flex flex-col gap-2">
             <div>Base: <span class="text-slate-200">{{.BaseURL}}</span></div>
             <div>Generated: <span class="text-slate-200">{{.GeneratedAt}}</span></div>
           </div>
@@ -108,38 +136,51 @@
       </header>
 
       <section class="mt-12 grid gap-6">
-        <div class="grid gap-4 md:grid-cols-[2fr_1fr_1fr]">
-          <div>
-            <label class="text-xs uppercase tracking-[0.2em] text-slate-400">Search</label>
-            <input id="searchInput" class="mt-2 w-full rounded-2xl bg-ink-800/70 border border-slate-600/40 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-tide-400/60" placeholder="Package, attrpath, upstream URL" />
+        <div class="sticky top-4 z-20">
+          <div class="rounded-[28px] border border-slate-600/40 bg-night-800/80 p-5 shadow-glow backdrop-blur">
+          <div class="grid gap-4 md:grid-cols-[2fr_1.1fr_1fr]">
+            <div>
+              <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-search text-base text-slate-500"></i>Search</label>
+              <input id="searchInput" class="mt-2 w-full rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pulse-400/60" placeholder="Package, attrpath, upstream URL" />
+            </div>
+            <div>
+              <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-filter text-base text-slate-500"></i>Status</label>
+              <div class="mt-2 flex flex-wrap gap-2" id="statusFilters"></div>
+            </div>
+            <div>
+              <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-sort-ascending-2 text-base text-slate-500"></i>Sort</label>
+              <select id="sortSelect" class="mt-2 w-full rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 text-sm">
+                <option value="date_desc">Newest first</option>
+                <option value="date_asc">Oldest first</option>
+                <option value="package_asc">Package A-Z</option>
+                <option value="package_desc">Package Z-A</option>
+                <option value="status">Status</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label class="text-xs uppercase tracking-[0.2em] text-slate-400">Status</label>
-            <div class="mt-2 flex flex-wrap gap-2" id="statusFilters"></div>
-          </div>
-          <div>
-            <label class="text-xs uppercase tracking-[0.2em] text-slate-400">Sort</label>
-            <select id="sortSelect" class="mt-2 w-full rounded-2xl bg-ink-800/70 border border-slate-600/40 px-4 py-3 text-sm">
-              <option value="date_desc">Newest first</option>
-              <option value="date_asc">Oldest first</option>
-              <option value="package_asc">Package A-Z</option>
-              <option value="package_desc">Package Z-A</option>
-              <option value="status">Status</option>
-            </select>
           </div>
         </div>
 
-        <div class="hidden" id="progressText">Loading entries…</div>
-
-        <div id="emptyState" class="hidden rounded-3xl border border-dashed border-slate-600/50 p-10 text-center text-slate-300">
-          No packages match the current filters.
+        <div class="hidden text-xs uppercase tracking-[0.35em] text-slate-500 flex items-center gap-2" id="progressText">
+          <i class="ti ti-loader-2 text-base animate-spin text-slate-500"></i>
+          Loading entries…
         </div>
 
-        <div id="cards" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"></div>
+        <div id="emptyState" class="hidden rounded-3xl border border-dashed border-slate-600/50 p-10 text-center text-slate-300 bg-night-900/60">
+          <div class="flex flex-col items-center gap-3">
+            <i class="ti ti-zoom-cancel text-2xl text-slate-400"></i>
+            <div>No packages match the current filters.</div>
+          </div>
+        </div>
 
-        <div id="loadMore" class="mt-2 rounded-2xl border border-slate-600/40 bg-ink-800/60 px-4 py-3 text-sm text-slate-300 flex items-center justify-between">
-          <span>Need more entries?</span>
-          <button id="loadButton" class="px-3 py-2 rounded-full border border-slate-500/40 hover:bg-ink-800/60 transition">Load more</button>
+        <div id="cards" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
+
+        <div id="loadMore" class="mt-2 rounded-2xl border border-slate-600/40 bg-night-800/60 px-4 py-3 text-sm text-slate-300 flex items-center justify-between">
+          <span class="flex items-center gap-2"><i class="ti ti-infinity text-base text-slate-400"></i>Need more entries?</span>
+          <button id="loadButton" class="px-3 py-2 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2">
+            <i class="ti ti-arrow-down text-base"></i>
+            Load more
+          </button>
         </div>
       </section>
     </main>
@@ -161,13 +202,19 @@
         loading: false,
         total: 0,
         statusTotals: {},
+        prefixIndex: {},
+        prefixData: {},
+        loadedPrefixes: new Set(),
       };
 
-      function createStatCard(label, value, accent) {
+      function createStatCard(label, value, accent, icon) {
         const card = document.createElement("div");
-        card.className = "rounded-2xl border border-slate-600/40 bg-ink-900/60 p-4 shadow-glow min-h-[104px] flex flex-col justify-between";
+        card.className = "rounded-2xl border border-slate-600/40 bg-night-900/60 p-4 shadow-glow min-h-[104px] flex flex-col justify-between";
         card.innerHTML = `
-          <div class="text-[11px] leading-4 uppercase tracking-[0.18em] text-slate-400 break-words">${label}</div>
+          <div class="text-[11px] leading-4 uppercase tracking-[0.18em] text-slate-400 break-words flex items-center gap-2">
+            <i class="${icon} text-base text-slate-500"></i>
+            ${label}
+          </div>
           <div class="mt-2 text-2xl font-semibold ${accent}">${value}</div>
         `;
         return card;
@@ -177,10 +224,10 @@
         const statsEl = document.getElementById("stats");
         statsEl.innerHTML = "";
         const completed = (stats.success || 0) + (stats["already-updated"] || 0);
-        statsEl.appendChild(createStatCard("Total", stats.total || 0, "text-slate-100"));
-        statsEl.appendChild(createStatCard("Completed", completed, "text-jade"));
-        statsEl.appendChild(createStatCard("Failed", stats.failed || 0, "text-ember"));
-        statsEl.appendChild(createStatCard("Opted out", stats["opted-out"] || 0, "text-gold"));
+        statsEl.appendChild(createStatCard("Total", stats.total || 0, "text-slate-100", "ti ti-stack-2"));
+        statsEl.appendChild(createStatCard("Completed", completed, "text-jade", "ti ti-check"));
+        statsEl.appendChild(createStatCard("Failed", stats.failed || 0, "text-ember", "ti ti-alert-triangle"));
+        statsEl.appendChild(createStatCard("Opted out", stats["opted-out"] || 0, "text-gold", "ti ti-hand-stop"));
       }
 
       function renderStatusFilters() {
@@ -188,7 +235,7 @@
         container.innerHTML = "";
         Object.entries(STATUS_META).forEach(([key, meta]) => {
           const button = document.createElement("button");
-          button.className = `px-3 py-1 rounded-full text-xs border ${meta.className} transition ${state.activeStatuses.has(key) ? "opacity-100" : "opacity-60"}`;
+          button.className = `px-3 py-1 rounded-full text-xs border ${meta.className} transition ${state.activeStatuses.has(key) ? "opacity-100 shadow-pill" : "opacity-60"}`;
           button.textContent = meta.label;
           button.addEventListener("click", () => {
             if (state.activeStatuses.has(key)) {
@@ -234,11 +281,63 @@
         }
       }
 
+      function combineEntries() {
+        const combined = [];
+        const seen = new Set();
+        const addEntry = (entry) => {
+          const key = `${entry.package}::${entry.date}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          combined.push(entry);
+        };
+        state.data.forEach(addEntry);
+        Object.values(state.prefixData).forEach((entries) => {
+          entries.forEach(addEntry);
+        });
+        return combined;
+      }
+
+      function prefixKeyFromSearch(search) {
+        const letters = [];
+        for (const ch of search) {
+          const code = ch.charCodeAt(0);
+          if (code >= 97 && code <= 122) {
+            letters.push(ch);
+            if (letters.length === 2) break;
+          } else if (letters.length > 0) {
+            break;
+          }
+        }
+        if (letters.length === 2) return letters.join("");
+        if (letters.length === 1) return `${letters[0]}_`;
+        return "other";
+      }
+
+      async function loadPrefix(key) {
+        if (!key) return;
+        if (state.loadedPrefixes.has(key)) return;
+        const info = state.prefixIndex[key];
+        if (!info) return;
+        state.loadedPrefixes.add(key);
+        const response = await fetch(info.file, { cache: "no-store" });
+        const payload = await response.json();
+        state.prefixData[key] = payload.entries || [];
+        filterAndRender();
+      }
+
       function filterAndRender() {
         const search = document.getElementById("searchInput").value.trim().toLowerCase();
         const sortKey = document.getElementById("sortSelect").value;
 
-        state.filtered = state.data.filter((entry) => {
+        if (search) {
+          const key = prefixKeyFromSearch(search);
+          if (key && !state.loadedPrefixes.has(key)) {
+            loadPrefix(key);
+          }
+        }
+
+        const combined = combineEntries();
+        state.filtered = combined.filter((entry) => {
           const status = normalizeStatus(entry.status);
           const statusMatch = state.activeStatuses.size === 0 || state.activeStatuses.has(status);
           return statusMatch && matchesSearch(entry, search);
@@ -253,6 +352,9 @@
           "already-updated": state.statusTotals["already-updated"],
         });
         renderCards(state.filtered);
+        if (!search && state.filtered.length === 0 && state.nextChunkIndex < state.chunks.length) {
+          loadUntilMatches();
+        }
       }
 
       function escapeHtml(value) {
@@ -291,45 +393,39 @@
           const safeAttr = escapeHtml(entry.attrpath || "attrpath unavailable");
           const safeOld = escapeHtml(entry.old_version);
           const safeNew = escapeHtml(entry.new_version);
-          const safeSummary = escapeHtml(entry.summary || "No summary extracted from log.");
           const safeError = escapeHtml(entry.error || "");
           const safeLogUrl = safeUrl(entry.log_url);
           const safeUpstreamUrl = safeUrl(entry.upstream_url);
 
           const card = document.createElement("article");
-          card.className = `rounded-3xl border border-slate-600/40 ${meta.borderClass} border-l-4 bg-ink-800/70 p-5 shadow-glow flex flex-col gap-4 opacity-0`;
+          card.className = `rounded-3xl border border-slate-600/40 ${meta.borderClass} border-l-4 bg-night-800/70 p-4 shadow-glow flex flex-col gap-3 opacity-0`;
           card.style.animationDelay = `${Math.min(index * 30, 300)}ms`;
           card.classList.add("animate-rise");
 
           const versionLine = entry.old_version && entry.new_version
-            ? `<span class=\"text-slate-300\">${safeOld} -> ${safeNew}</span>`
-            : `<span class=\"text-slate-500\">Version info unavailable</span>`;
-
-          const summaryLine = entry.summary
-            ? `<p class=\"text-sm text-slate-300\">${safeSummary}</p>`
-            : `<p class=\"text-sm text-slate-500\">No summary extracted from log.</p>`;
+            ? `<span class=\"text-slate-300 flex items-center gap-2\"><i class=\"ti ti-arrow-right text-base text-slate-500\"></i>${safeOld} -> ${safeNew}</span>`
+            : `<span class=\"text-slate-500 flex items-center gap-2\"><i class=\"ti ti-minus text-base text-slate-500\"></i>Version info unavailable</span>`;
 
           const errorLine = entry.error
-            ? `<div class=\"text-sm text-ember/90 bg-ember/10 border border-ember/30 rounded-2xl px-3 py-2\">${safeError}</div>`
+            ? `<div class=\"text-xs text-ember/90 bg-ember/10 border border-ember/30 rounded-2xl px-3 py-2\">${safeError}</div>`
             : "";
 
           card.innerHTML = `
             <div class=\"flex items-start justify-between gap-3\">
               <div class=\"min-w-0\">
-                <h3 class=\"text-lg font-semibold break-words\">${safePackage}</h3>
+                <h3 class=\"text-base font-semibold break-words\">${safePackage}</h3>
                 <div class=\"text-xs text-slate-400 font-mono\">${safeDate}</div>
               </div>
-              <div class=\"text-[11px] uppercase tracking-[0.22em] text-slate-400\">${meta.label}</div>
+              <div class=\"text-[11px] uppercase tracking-[0.22em] text-slate-200 border border-slate-600/40 px-2 py-1 rounded-full bg-night-900/70\">${meta.label}</div>
             </div>
-            <div class=\"rounded-2xl border border-slate-600/40 bg-ink-900/70 px-4 py-3\">
+            <div class=\"rounded-2xl border border-slate-600/40 bg-night-900/70 px-3 py-2\">
               <div class=\"text-xs uppercase tracking-[0.2em] text-slate-400\">Version change</div>
-              <div class=\"mt-2 text-lg font-semibold text-slate-100\">${versionLine}</div>
+              <div class=\"mt-1 text-sm font-semibold text-slate-100\">${versionLine}</div>
             </div>
-            ${summaryLine}
             ${errorLine}
             <div class=\"flex flex-wrap gap-2 text-xs\">
-              <a class=\"px-3 py-2 rounded-full border border-slate-500/40 hover:bg-ink-800/60 transition\" href=\"${safeLogUrl}\" target=\"_blank\" rel=\"noopener\">Open log</a>
-              ${safeUpstreamUrl ? `<a class=\"px-3 py-2 rounded-full border border-slate-500/40 hover:bg-ink-800/60 transition\" href=\"${safeUpstreamUrl}\" target=\"_blank\" rel=\"noopener\">Upstream</a>` : ""}
+              <a class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" href=\"${safeLogUrl}\" target=\"_blank\" rel=\"noopener\"><i class=\"ti ti-notes text-base\"></i>Open log</a>
+              ${safeUpstreamUrl ? `<a class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" href=\"${safeUpstreamUrl}\" target=\"_blank\" rel=\"noopener\"><i class=\"ti ti-external-link text-base\"></i>Upstream</a>` : ""}
             </div>
           `;
           fragment.appendChild(card);
@@ -370,12 +466,24 @@
         await loadChunk(chunk);
       }
 
+      async function loadUntilMatches() {
+        if (state.loading) return;
+        if (state.nextChunkIndex >= state.chunks.length) return;
+        let safety = 0;
+        while (state.filtered.length === 0 && state.nextChunkIndex < state.chunks.length) {
+          await loadNextChunk();
+          safety += 1;
+          if (safety > state.chunks.length) break;
+        }
+      }
+
       async function loadIndex() {
         const response = await fetch("index.json", { cache: "no-store" });
         const payload = await response.json();
         state.chunks = payload.chunks || [];
         state.total = payload.total || 0;
         state.statusTotals = payload.statuses || {};
+        state.prefixIndex = payload.prefixes || {};
         renderStatusFilters();
         renderStats({
           total: state.total,
@@ -392,7 +500,7 @@
       document.getElementById("sortSelect").addEventListener("change", filterAndRender);
 
       const loadButton = document.getElementById("loadButton");
-      loadButton.addEventListener("click", loadNextChunk);
+      loadButton.addEventListener("click", loadUntilMatches);
 
       const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {

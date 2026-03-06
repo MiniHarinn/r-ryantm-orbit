@@ -42,7 +42,6 @@ type LogEntry struct {
 	NewVersion  string `json:"new_version,omitempty"`
 	AttrPath    string `json:"attrpath,omitempty"`
 	UpstreamURL string `json:"upstream_url,omitempty"`
-	Summary     string `json:"summary,omitempty"`
 	Error       string `json:"error,omitempty"`
 }
 
@@ -60,6 +59,11 @@ type ChunkInfo struct {
 	MaxDate string `json:"max_date,omitempty"`
 }
 
+type PrefixInfo struct {
+	File  string `json:"file"`
+	Count int    `json:"count"`
+}
+
 type SiteIndex struct {
 	GeneratedAt string         `json:"generated_at"`
 	BaseURL     string         `json:"base_url"`
@@ -68,6 +72,7 @@ type SiteIndex struct {
 	ChunkSize   int            `json:"chunk_size"`
 	Statuses    map[string]int `json:"statuses"`
 	Chunks      []ChunkInfo    `json:"chunks"`
+	Prefixes    map[string]PrefixInfo `json:"prefixes"`
 }
 
 type SiteMeta struct {
@@ -349,7 +354,6 @@ func parseLog(body []byte, entry *LogEntry) {
 	lines := strings.Split(text, "\n")
 
 	entry.Status = deriveStatus(text)
-	entry.Summary = deriveSummary(lines, entry.Status)
 	if entry.Status == "failed" {
 		entry.Error = deriveError(lines)
 	}
@@ -393,29 +397,6 @@ func deriveStatus(text string) string {
 	default:
 		return "unknown"
 	}
-}
-
-func deriveSummary(lines []string, status string) string {
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		if strings.HasPrefix(line, "Running nixpkgs-update") {
-			continue
-		}
-		if status == "opted-out" && (strings.Contains(strings.ToLower(line), "opts-out") ||
-			strings.Contains(strings.ToLower(line), "opts out") ||
-			strings.Contains(strings.ToLower(line), "no auto update") ||
-			strings.Contains(strings.ToLower(line), "derivation file opts-out")) {
-			return line
-		}
-		if strings.Contains(line, "UPDATE_INFO:") {
-			continue
-		}
-		return line
-	}
-	return ""
 }
 
 func deriveError(lines []string) string {
@@ -563,6 +544,36 @@ func WriteChunkedData(dir string, payload SiteData, chunkSize int) (SiteIndex, e
 		chunks = append(chunks, info)
 	}
 
+	prefixes := map[string][]LogEntry{}
+	for _, entry := range payload.Entries {
+		key := prefixKey(entry.Package)
+		prefixes[key] = append(prefixes[key], entry)
+	}
+
+	prefixIndex := map[string]PrefixInfo{}
+	if len(prefixes) > 0 {
+		keys := make([]string, 0, len(prefixes))
+		for key := range prefixes {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			entries := prefixes[key]
+			file := fmt.Sprintf("prefix-%s.json", key)
+			chunkPayload := struct {
+				Entries []LogEntry `json:"entries"`
+			}{Entries: entries}
+			data, err := json.MarshalIndent(chunkPayload, "", "  ")
+			if err != nil {
+				return SiteIndex{}, err
+			}
+			if err := os.WriteFile(pathJoin(dir, file), data, 0o644); err != nil {
+				return SiteIndex{}, err
+			}
+			prefixIndex[key] = PrefixInfo{File: file, Count: len(entries)}
+		}
+	}
+
 	index := SiteIndex{
 		GeneratedAt: payload.GeneratedAt,
 		BaseURL:     payload.BaseURL,
@@ -571,6 +582,7 @@ func WriteChunkedData(dir string, payload SiteData, chunkSize int) (SiteIndex, e
 		ChunkSize:   chunkSize,
 		Statuses:    statuses,
 		Chunks:      chunks,
+		Prefixes:    prefixIndex,
 	}
 
 	indexData, err := json.MarshalIndent(index, "", "  ")
@@ -581,4 +593,28 @@ func WriteChunkedData(dir string, payload SiteData, chunkSize int) (SiteIndex, e
 		return SiteIndex{}, err
 	}
 	return index, nil
+}
+
+func prefixKey(value string) string {
+	lower := strings.ToLower(value)
+	var letters []rune
+	for _, r := range lower {
+		if r >= 'a' && r <= 'z' {
+			letters = append(letters, r)
+			if len(letters) == 2 {
+				break
+			}
+			continue
+		}
+		if len(letters) > 0 {
+			break
+		}
+	}
+	if len(letters) == 2 {
+		return string(letters)
+	}
+	if len(letters) == 1 {
+		return string(letters) + "_"
+	}
+	return "other"
 }
