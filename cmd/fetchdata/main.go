@@ -1,0 +1,50 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
+	"time"
+
+	"fast-rrytm/internal/sitegen"
+)
+
+func main() {
+	opts := sitegen.Options{}
+	outDir := "dist"
+	dataName := "data.json"
+
+	flag.StringVar(&opts.BaseURL, "base", "https://nixpkgs-update-logs.nix-community.org/", "base URL for logs")
+	flag.StringVar(&outDir, "out", outDir, "output directory")
+	flag.StringVar(&opts.Mode, "mode", "latest", "mode: latest or all")
+	flag.IntVar(&opts.Workers, "workers", 16, "number of concurrent workers")
+	flag.IntVar(&opts.MaxPackages, "max-packages", 0, "limit number of packages (0 = no limit)")
+	flag.DurationVar(&opts.HTTPTimeout, "timeout", 45*time.Second, "HTTP timeout")
+	flag.StringVar(&opts.UserAgent, "user-agent", "fast-rrytm-sitegen/1.0", "HTTP user agent")
+	flag.StringVar(&dataName, "data", dataName, "data JSON filename")
+	flag.BoolVar(&opts.Verbose, "verbose", false, "enable verbose logging")
+	flag.Parse()
+
+	client := &http.Client{Timeout: opts.HTTPTimeout}
+
+	payload, err := sitegen.FetchAndParse(client, opts)
+	if err != nil {
+		exitErr(err)
+	}
+
+	if err := sitegen.EnsureDir(outDir); err != nil {
+		exitErr(err)
+	}
+
+	dataPath := filepath.Join(outDir, dataName)
+	if err := sitegen.WriteJSON(dataPath, payload); err != nil {
+		exitErr(err)
+	}
+}
+
+func exitErr(err error) {
+	fmt.Fprintln(os.Stderr, "error:", err)
+	os.Exit(1)
+}
