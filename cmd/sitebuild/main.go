@@ -11,7 +11,7 @@ import (
 
 func main() {
 	outDir := "dist"
-	dataPath := "dist/data.json"
+	dataPath := "dist/index.json"
 	verbose := false
 
 	flag.StringVar(&outDir, "out", outDir, "output directory")
@@ -20,10 +20,10 @@ func main() {
 	flag.Parse()
 
 	if verbose {
-		fmt.Fprintln(os.Stderr, "verbose: loading data", dataPath)
+		fmt.Fprintln(os.Stderr, "verbose: loading index", dataPath)
 	}
 
-	payload, err := sitegen.LoadData(dataPath)
+	index, err := sitegen.LoadIndex(dataPath)
 	if err != nil {
 		exitErr(err)
 	}
@@ -35,7 +35,12 @@ func main() {
 	if verbose {
 		fmt.Fprintln(os.Stderr, "verbose: writing site to", outDir)
 	}
-	if err := sitegen.WriteHTML(filepath.Join(outDir, "index.html"), payload); err != nil {
+	meta := sitegen.SiteMeta{
+		GeneratedAt: index.GeneratedAt,
+		BaseURL:     index.BaseURL,
+		Mode:        index.Mode,
+	}
+	if err := sitegen.WriteHTML(filepath.Join(outDir, "index.html"), meta); err != nil {
 		exitErr(err)
 	}
 }

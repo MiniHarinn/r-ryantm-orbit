@@ -15,6 +15,7 @@ func main() {
 	opts := sitegen.Options{}
 	outDir := "dist"
 	dataName := "data.json"
+	chunkSize := 800
 
 	flag.StringVar(&opts.BaseURL, "base", "https://nixpkgs-update-logs.nix-community.org/", "base URL for logs")
 	flag.StringVar(&outDir, "out", outDir, "output directory")
@@ -25,6 +26,7 @@ func main() {
 	flag.DurationVar(&opts.HTTPTimeout, "timeout", 45*time.Second, "HTTP timeout")
 	flag.StringVar(&opts.UserAgent, "user-agent", "fast-rrytm-sitegen/1.0", "HTTP user agent")
 	flag.StringVar(&dataName, "data", dataName, "data JSON filename")
+	flag.IntVar(&chunkSize, "chunk-size", chunkSize, "entries per chunk file")
 	flag.BoolVar(&opts.Verbose, "verbose", false, "enable verbose logging")
 	flag.Parse()
 
@@ -41,6 +43,10 @@ func main() {
 
 	dataPath := filepath.Join(outDir, dataName)
 	if err := sitegen.WriteJSON(dataPath, payload); err != nil {
+		exitErr(err)
+	}
+
+	if _, err := sitegen.WriteChunkedData(outDir, payload, chunkSize); err != nil {
 		exitErr(err)
 	}
 }

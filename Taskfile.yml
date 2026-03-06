@@ -6,8 +6,6 @@ vars:
 
 silent: false
 
-includes: []
-
 tasks:
   fetch:
     desc: Fetch and parse logs into data.json
@@ -15,9 +13,9 @@ tasks:
       - nix develop --command go run ./cmd/fetchdata -out {{.DIST_DIR}}
 
   build:
-    desc: Build site from existing data.json
+    desc: Build site from existing index.json
     cmds:
-      - nix develop --command go run ./cmd/sitebuild -out {{.DIST_DIR}} -data {{.DIST_DIR}}/data.json
+      - nix develop --command go run ./cmd/sitebuild -out {{.DIST_DIR}} -data {{.DIST_DIR}}/index.json
 
   all:
     desc: Fetch data then build site
@@ -28,7 +26,7 @@ tasks:
   serve:
     desc: Serve dist/ via Caddy on :8080
     cmds:
-      - caddy file-server --root {{.DIST_DIR}} --listen :{{.PORT}}
+      - nix develop --command caddy file-server --root {{.DIST_DIR}} --listen :{{.PORT}}
 
   clean:
     desc: Remove generated output

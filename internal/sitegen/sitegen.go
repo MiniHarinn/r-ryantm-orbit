@@ -53,6 +53,29 @@ type SiteData struct {
 	Entries     []LogEntry `json:"entries"`
 }
 
+type ChunkInfo struct {
+	File    string `json:"file"`
+	Count   int    `json:"count"`
+	MinDate string `json:"min_date,omitempty"`
+	MaxDate string `json:"max_date,omitempty"`
+}
+
+type SiteIndex struct {
+	GeneratedAt string         `json:"generated_at"`
+	BaseURL     string         `json:"base_url"`
+	Mode        string         `json:"mode"`
+	Total       int            `json:"total"`
+	ChunkSize   int            `json:"chunk_size"`
+	Statuses    map[string]int `json:"statuses"`
+	Chunks      []ChunkInfo    `json:"chunks"`
+}
+
+type SiteMeta struct {
+	GeneratedAt string
+	BaseURL     string
+	Mode        string
+}
+
 type Options struct {
 	BaseURL     string
 	Mode        string
@@ -107,6 +130,18 @@ func LoadData(path string) (SiteData, error) {
 	return payload, nil
 }
 
+func LoadIndex(path string) (SiteIndex, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return SiteIndex{}, err
+	}
+	var payload SiteIndex
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return SiteIndex{}, err
+	}
+	return payload, nil
+}
+
 func WriteJSON(path string, payload SiteData) error {
 	data, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
@@ -115,16 +150,16 @@ func WriteJSON(path string, payload SiteData) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
-func WriteHTML(path string, payload SiteData) error {
+func WriteHTML(path string, meta SiteMeta) error {
 	tplData, err := templateFS.ReadFile("templates/index.html")
 	if err != nil {
 		return err
 	}
 
 	replacer := strings.NewReplacer(
-		"{{.GeneratedAt}}", payload.GeneratedAt,
-		"{{.BaseURL}}", payload.BaseURL,
-		"{{.Mode}}", payload.Mode,
+		"{{.GeneratedAt}}", meta.GeneratedAt,
+		"{{.BaseURL}}", meta.BaseURL,
+		"{{.Mode}}", meta.Mode,
 	)
 
 	output := replacer.Replace(string(tplData))
@@ -334,13 +369,19 @@ func deriveStatus(text string) string {
 	lower := strings.ToLower(text)
 
 	switch {
-	case strings.Contains(lower, "opts-out of auto-updates") ||
+	case strings.Contains(lower, "[result] success updating") ||
+		strings.Contains(lower, "successfully finished processing"):
+		return "success"
+	case strings.Contains(lower, "derivation file opts-out of auto-updates") ||
+		strings.Contains(lower, "nixpkgs-update: no auto update") ||
 		strings.Contains(lower, "opts out of auto-updates") ||
-		strings.Contains(lower, "no auto update"):
+		strings.Contains(lower, "opts-out of auto-updates"):
 		return "opted-out"
 	case strings.Contains(lower, "auto update branch exists with an equal or greater version") ||
 		strings.Contains(lower, "auto update branch exists with an equal or greater"):
 		return "already-updated"
+	case strings.Contains(lower, "[result] failed to update"):
+		return "failed"
 	case strings.Contains(lower, "error:") ||
 		strings.Contains(lower, "failed with exit code") ||
 		strings.Contains(lower, "build failed") ||
@@ -349,9 +390,6 @@ func deriveStatus(text string) string {
 		strings.Contains(lower, "failed to build") ||
 		strings.Contains(lower, "failed to download"):
 		return "failed"
-	case strings.Contains(lower, "successfully finished processing") ||
-		strings.Contains(lower, "successfully finished"):
-		return "success"
 	default:
 		return "unknown"
 	}
@@ -366,7 +404,10 @@ func deriveSummary(lines []string, status string) string {
 		if strings.HasPrefix(line, "Running nixpkgs-update") {
 			continue
 		}
-		if status == "opted-out" && strings.Contains(strings.ToLower(line), "opt") {
+		if status == "opted-out" && (strings.Contains(strings.ToLower(line), "opts-out") ||
+			strings.Contains(strings.ToLower(line), "opts out") ||
+			strings.Contains(strings.ToLower(line), "no auto update") ||
+			strings.Contains(strings.ToLower(line), "derivation file opts-out")) {
 			return line
 		}
 		if strings.Contains(line, "UPDATE_INFO:") {
@@ -470,13 +511,74 @@ func WriteData(path string, payload SiteData) error {
 	return WriteJSON(pathJoin(path, "data.json"), payload)
 }
 
-func WriteSite(path string, payload SiteData) error {
+func WriteSite(path string, meta SiteMeta) error {
 	if err := EnsureDir(path); err != nil {
 		return err
 	}
-	return WriteHTML(pathJoin(path, "index.html"), payload)
+	return WriteHTML(pathJoin(path, "index.html"), meta)
 }
 
 func pathJoin(dir, file string) string {
 	return path.Join(dir, file)
+}
+
+func WriteChunkedData(dir string, payload SiteData, chunkSize int) (SiteIndex, error) {
+	if chunkSize < 1 {
+		chunkSize = 500
+	}
+	if err := EnsureDir(dir); err != nil {
+		return SiteIndex{}, err
+	}
+
+	statuses := map[string]int{}
+	for _, entry := range payload.Entries {
+		statuses[entry.Status]++
+	}
+
+	var chunks []ChunkInfo
+	for i := 0; i < len(payload.Entries); i += chunkSize {
+		end := i + chunkSize
+		if end > len(payload.Entries) {
+			end = len(payload.Entries)
+		}
+		chunkEntries := payload.Entries[i:end]
+		file := fmt.Sprintf("entries-%04d.json", len(chunks)+1)
+		chunkPath := pathJoin(dir, file)
+		chunkPayload := struct {
+			Entries []LogEntry `json:"entries"`
+		}{Entries: chunkEntries}
+		data, err := json.MarshalIndent(chunkPayload, "", "  ")
+		if err != nil {
+			return SiteIndex{}, err
+		}
+		if err := os.WriteFile(chunkPath, data, 0o644); err != nil {
+			return SiteIndex{}, err
+		}
+
+		info := ChunkInfo{File: file, Count: len(chunkEntries)}
+		if len(chunkEntries) > 0 {
+			info.MaxDate = chunkEntries[0].Date
+			info.MinDate = chunkEntries[len(chunkEntries)-1].Date
+		}
+		chunks = append(chunks, info)
+	}
+
+	index := SiteIndex{
+		GeneratedAt: payload.GeneratedAt,
+		BaseURL:     payload.BaseURL,
+		Mode:        payload.Mode,
+		Total:       len(payload.Entries),
+		ChunkSize:   chunkSize,
+		Statuses:    statuses,
+		Chunks:      chunks,
+	}
+
+	indexData, err := json.MarshalIndent(index, "", "  ")
+	if err != nil {
+		return SiteIndex{}, err
+	}
+	if err := os.WriteFile(pathJoin(dir, "index.json"), indexData, 0o644); err != nil {
+		return SiteIndex{}, err
+	}
+	return index, nil
 }

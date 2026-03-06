@@ -23,6 +23,7 @@
               go-tools
               git
               curl
+              caddy
             ];
           };
         });
