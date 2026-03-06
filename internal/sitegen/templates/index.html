@@ -1,0 +1,321 @@
+<!doctype html>
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>nixpkgs update logs</title>
+    <meta name="description" content="Status dashboard for nixpkgs-update logs." />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ["Space Grotesk", "ui-sans-serif", "system-ui"],
+              mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular"],
+            },
+            colors: {
+              night: {
+                900: "#0b0f1a",
+                800: "#0f1526",
+                700: "#151d33",
+              },
+            },
+            boxShadow: {
+              glow: "0 0 0 1px rgba(148,163,184,0.15), 0 12px 40px rgba(15,23,42,0.45)",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+      :root { color-scheme: dark; }
+      body {
+        background-image:
+          radial-gradient(1200px 600px at 10% 10%, rgba(56,189,248,0.12), transparent 60%),
+          radial-gradient(800px 500px at 90% 20%, rgba(244,114,182,0.12), transparent 60%),
+          linear-gradient(160deg, #0b0f1a 0%, #0b1020 35%, #0f172a 100%);
+      }
+      .grain {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.08;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/></filter><rect width="180" height="180" filter="url(%23n)" opacity="0.4"/></svg>');
+        mix-blend-mode: soft-light;
+      }
+    </style>
+  </head>
+  <body class="font-display text-slate-100 min-h-screen">
+    <div class="grain"></div>
+
+    <main class="relative max-w-6xl mx-auto px-6 py-10">
+      <header class="flex flex-col gap-6">
+        <div class="flex flex-col gap-3">
+          <div class="inline-flex items-center gap-2 text-xs tracking-[0.3em] uppercase text-sky-200/70">
+            <span class="h-px w-8 bg-sky-400/60"></span>
+            nixpkgs-update watch
+          </div>
+          <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h1 class="text-4xl md:text-5xl font-semibold">Update status dashboard</h1>
+              <p class="text-slate-300 mt-3 max-w-2xl">
+                Live snapshot of package auto-update runs from nixpkgs-update logs. Filter by status,
+                scan failures, and jump straight to the raw build output.
+              </p>
+            </div>
+            <div class="flex items-center gap-3">
+              <button id="themeToggle" class="px-4 py-2 rounded-full border border-slate-500/40 text-sm hover:bg-slate-800/60 transition">
+                Toggle theme
+              </button>
+              <div class="text-xs text-slate-400 text-right">
+                <div>Generated</div>
+                <div class="font-mono" id="generatedAt">{{.GeneratedAt}}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section class="grid gap-4 md:grid-cols-5" id="stats"></section>
+      </header>
+
+      <section class="mt-10 grid gap-6">
+        <div class="grid gap-4 md:grid-cols-4">
+          <div class="md:col-span-2">
+            <label class="text-xs uppercase tracking-[0.2em] text-slate-400">Search</label>
+            <input id="searchInput" class="mt-2 w-full rounded-2xl bg-night-800/70 border border-slate-600/40 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/60" placeholder="Package, attrpath, upstream URL" />
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-[0.2em] text-slate-400">Status</label>
+            <div class="mt-2 flex flex-wrap gap-2" id="statusFilters"></div>
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-[0.2em] text-slate-400">Sort</label>
+            <select id="sortSelect" class="mt-2 w-full rounded-2xl bg-night-800/70 border border-slate-600/40 px-4 py-3 text-sm">
+              <option value="date_desc">Newest first</option>
+              <option value="date_asc">Oldest first</option>
+              <option value="package_asc">Package A-Z</option>
+              <option value="package_desc">Package Z-A</option>
+              <option value="status">Status</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-sm text-slate-400">
+          <div>Base URL: <span class="font-mono">{{.BaseURL}}</span></div>
+          <div>Mode: <span class="font-mono">{{.Mode}}</span></div>
+        </div>
+
+        <div id="emptyState" class="hidden rounded-3xl border border-dashed border-slate-600/50 p-10 text-center text-slate-300">
+          No packages match the current filters.
+        </div>
+
+        <div id="cards" class="grid gap-4 md:grid-cols-2"></div>
+      </section>
+    </main>
+
+    <script>
+      const STATUS_META = {
+        success: { label: "Success", className: "border-emerald-400/40 bg-emerald-500/10 text-emerald-200" },
+        failed: { label: "Failed", className: "border-rose-400/40 bg-rose-500/10 text-rose-200" },
+        "opted-out": { label: "Opted out", className: "border-amber-400/40 bg-amber-500/10 text-amber-200" },
+        "already-updated": { label: "Already updated", className: "border-sky-400/40 bg-sky-500/10 text-sky-200" },
+        unknown: { label: "Unknown", className: "border-slate-400/40 bg-slate-500/10 text-slate-200" },
+      };
+
+      const state = {
+        data: [],
+        filtered: [],
+        activeStatuses: new Set(),
+      };
+
+      const themeToggle = document.getElementById("themeToggle");
+      themeToggle.addEventListener("click", () => {
+        document.documentElement.classList.toggle("dark");
+        const isDark = document.documentElement.classList.contains("dark");
+        localStorage.setItem("theme", isDark ? "dark" : "light");
+      });
+
+      const storedTheme = localStorage.getItem("theme");
+      if (storedTheme === "light") {
+        document.documentElement.classList.remove("dark");
+      }
+
+      function createStatCard(label, value, accent) {
+        const card = document.createElement("div");
+        card.className = `rounded-3xl border border-slate-600/40 bg-night-800/60 p-4 shadow-glow`;
+        card.innerHTML = `
+          <div class="text-xs uppercase tracking-[0.2em] text-slate-400">${label}</div>
+          <div class="mt-2 text-2xl font-semibold ${accent}">${value}</div>
+        `;
+        return card;
+      }
+
+      function renderStats(entries) {
+        const stats = entries.reduce((acc, entry) => {
+          acc.total += 1;
+          acc[entry.status] = (acc[entry.status] || 0) + 1;
+          return acc;
+        }, { total: 0 });
+
+        const statsEl = document.getElementById("stats");
+        statsEl.innerHTML = "";
+        statsEl.appendChild(createStatCard("Total", stats.total || 0, "text-slate-100"));
+        statsEl.appendChild(createStatCard("Success", stats.success || 0, "text-emerald-200"));
+        statsEl.appendChild(createStatCard("Failed", stats.failed || 0, "text-rose-200"));
+        statsEl.appendChild(createStatCard("Opted out", stats["opted-out"] || 0, "text-amber-200"));
+        statsEl.appendChild(createStatCard("Already updated", stats["already-updated"] || 0, "text-sky-200"));
+      }
+
+      function renderStatusFilters() {
+        const container = document.getElementById("statusFilters");
+        container.innerHTML = "";
+        Object.entries(STATUS_META).forEach(([key, meta]) => {
+          const button = document.createElement("button");
+          button.className = `px-3 py-1 rounded-full text-xs border ${meta.className} transition ${state.activeStatuses.has(key) ? "opacity-100" : "opacity-60"}`;
+          button.textContent = meta.label;
+          button.addEventListener("click", () => {
+            if (state.activeStatuses.has(key)) {
+              state.activeStatuses.delete(key);
+            } else {
+              state.activeStatuses.add(key);
+            }
+            renderStatusFilters();
+            filterAndRender();
+          });
+          container.appendChild(button);
+        });
+      }
+
+      function matchesSearch(entry, search) {
+        if (!search) return true;
+        const haystack = `${entry.package} ${entry.attrpath || ""} ${entry.upstream_url || ""}`.toLowerCase();
+        return haystack.includes(search);
+      }
+
+      function sortEntries(entries, sortKey) {
+        const list = [...entries];
+        switch (sortKey) {
+          case "date_asc":
+            return list.sort((a, b) => a.date.localeCompare(b.date));
+          case "date_desc":
+            return list.sort((a, b) => b.date.localeCompare(a.date));
+          case "package_desc":
+            return list.sort((a, b) => b.package.localeCompare(a.package));
+          case "package_asc":
+            return list.sort((a, b) => a.package.localeCompare(b.package));
+          case "status":
+            return list.sort((a, b) => a.status.localeCompare(b.status) || b.date.localeCompare(a.date));
+          default:
+            return list;
+        }
+      }
+
+      function filterAndRender() {
+        const search = document.getElementById("searchInput").value.trim().toLowerCase();
+        const sortKey = document.getElementById("sortSelect").value;
+
+        state.filtered = state.data.filter((entry) => {
+          const statusMatch = state.activeStatuses.size === 0 || state.activeStatuses.has(entry.status);
+          return statusMatch && matchesSearch(entry, search);
+        });
+
+        state.filtered = sortEntries(state.filtered, sortKey);
+        renderStats(state.filtered);
+        renderCards(state.filtered);
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function safeUrl(value) {
+        if (!value) return "";
+        if (value.startsWith("http://") || value.startsWith("https://")) {
+          return encodeURI(value);
+        }
+        return "";
+      }
+
+      function renderCards(entries) {
+        const cards = document.getElementById("cards");
+        cards.innerHTML = "";
+        const emptyState = document.getElementById("emptyState");
+        if (entries.length === 0) {
+          emptyState.classList.remove("hidden");
+          return;
+        }
+        emptyState.classList.add("hidden");
+
+        const fragment = document.createDocumentFragment();
+        entries.forEach((entry) => {
+          const meta = STATUS_META[entry.status] || STATUS_META.unknown;
+          const safePackage = escapeHtml(entry.package);
+          const safeDate = escapeHtml(entry.date);
+          const safeAttr = escapeHtml(entry.attrpath || "attrpath unavailable");
+          const safeOld = escapeHtml(entry.old_version);
+          const safeNew = escapeHtml(entry.new_version);
+          const safeSummary = escapeHtml(entry.summary || "No summary extracted from log.");
+          const safeError = escapeHtml(entry.error || "");
+          const safeLogUrl = safeUrl(entry.log_url);
+          const safeUpstreamUrl = safeUrl(entry.upstream_url);
+          const card = document.createElement("article");
+          card.className = "rounded-3xl border border-slate-600/40 bg-night-800/70 p-5 shadow-glow flex flex-col gap-4";
+
+          const versionLine = entry.old_version && entry.new_version
+            ? `<span class="text-slate-300">${safeOld} -> ${safeNew}</span>`
+            : `<span class="text-slate-500">Version info unavailable</span>`;
+
+          const summaryLine = entry.summary
+            ? `<p class="text-sm text-slate-300">${safeSummary}</p>`
+            : `<p class="text-sm text-slate-500">No summary extracted from log.</p>`;
+
+          const errorLine = entry.error
+            ? `<div class="text-sm text-rose-200/90 bg-rose-500/10 border border-rose-400/30 rounded-2xl px-3 py-2">${safeError}</div>`
+            : "";
+
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-xl font-semibold">${safePackage}</h3>
+                <div class="text-xs text-slate-400 font-mono">${safeDate}</div>
+              </div>
+              <div class="px-3 py-1 text-xs border rounded-full ${meta.className}">${meta.label}</div>
+            </div>
+            <div class="text-sm">${versionLine}</div>
+            <div class="text-xs text-slate-400 font-mono">${safeAttr}</div>
+            ${summaryLine}
+            ${errorLine}
+            <div class="flex flex-wrap gap-2 text-xs">
+              <a class="px-3 py-2 rounded-full border border-slate-500/40 hover:bg-slate-800/60 transition" href="${safeLogUrl}" target="_blank" rel="noopener">Open log</a>
+              ${safeUpstreamUrl ? `<a class="px-3 py-2 rounded-full border border-slate-500/40 hover:bg-slate-800/60 transition" href="${safeUpstreamUrl}" target="_blank" rel="noopener">Upstream</a>` : ""}
+            </div>
+          `;
+          fragment.appendChild(card);
+        });
+        cards.appendChild(fragment);
+      }
+
+      async function loadData() {
+        const response = await fetch("data.json", { cache: "no-store" });
+        const payload = await response.json();
+        state.data = payload.entries || [];
+        renderStatusFilters();
+        filterAndRender();
+      }
+
+      document.getElementById("searchInput").addEventListener("input", filterAndRender);
+      document.getElementById("sortSelect").addEventListener("change", filterAndRender);
+
+      loadData();
+    </script>
+  </body>
+</html>

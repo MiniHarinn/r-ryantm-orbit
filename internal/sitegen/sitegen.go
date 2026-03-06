@@ -1,0 +1,428 @@
+package sitegen
+
+import (
+	"bytes"
+	"embed"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path"
+	"regexp"
+	"sort"
+	"strings"
+	"sync"
+	"time"
+
+	"golang.org/x/net/html"
+)
+
+//go:embed templates/index.html
+var templateFS embed.FS
+
+var (
+	updateInfoRegex = regexp.MustCompile(`(?i)([\w.+-]+)\s+([^\s]+)\s+->\s+([^\s]+)\s+(https?://[^\s]+)`) // pkg old -> new url
+	attrPathRegex   = regexp.MustCompile(`(?i)attrpath:\s*([^\s]+)`)                               // attrpath: foo
+)
+
+type LogTask struct {
+	Package string
+	Date    string
+	URL     string
+}
+
+type LogEntry struct {
+	Package     string `json:"package"`
+	Date        string `json:"date"`
+	LogURL      string `json:"log_url"`
+	Status      string `json:"status"`
+	OldVersion  string `json:"old_version,omitempty"`
+	NewVersion  string `json:"new_version,omitempty"`
+	AttrPath    string `json:"attrpath,omitempty"`
+	UpstreamURL string `json:"upstream_url,omitempty"`
+	Summary     string `json:"summary,omitempty"`
+	Error       string `json:"error,omitempty"`
+}
+
+type SiteData struct {
+	GeneratedAt string     `json:"generated_at"`
+	BaseURL     string     `json:"base_url"`
+	Mode        string     `json:"mode"`
+	Entries     []LogEntry `json:"entries"`
+}
+
+type Options struct {
+	BaseURL     string
+	Mode        string
+	Workers     int
+	MaxPackages int
+	HTTPTimeout time.Duration
+	UserAgent   string
+	Verbose     bool
+}
+
+func FetchAndParse(client *http.Client, opts Options) (SiteData, error) {
+	logf(opts, "fetching package index from %s", opts.BaseURL)
+	packages, err := fetchPackageList(client, opts)
+	if err != nil {
+		return SiteData{}, err
+	}
+	logf(opts, "found %d packages", len(packages))
+
+	if opts.MaxPackages > 0 && len(packages) > opts.MaxPackages {
+		packages = packages[:opts.MaxPackages]
+		logf(opts, "limiting to %d packages", len(packages))
+	}
+
+	logf(opts, "building log tasks (mode=%s)", opts.Mode)
+	tasks, err := buildTasks(client, opts, packages)
+	if err != nil {
+		return SiteData{}, err
+	}
+	logf(opts, "queued %d log tasks", len(tasks))
+
+	entries := fetchLogs(client, opts, tasks)
+	sortEntries(entries)
+
+	return SiteData{
+		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		BaseURL:     opts.BaseURL,
+		Mode:        opts.Mode,
+		Entries:     entries,
+	}, nil
+}
+
+func LoadData(path string) (SiteData, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return SiteData{}, err
+	}
+	var payload SiteData
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return SiteData{}, err
+	}
+	return payload, nil
+}
+
+func WriteJSON(path string, payload SiteData) error {
+	data, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o644)
+}
+
+func WriteHTML(path string, payload SiteData) error {
+	tplData, err := templateFS.ReadFile("templates/index.html")
+	if err != nil {
+		return err
+	}
+
+	replacer := strings.NewReplacer(
+		"{{.GeneratedAt}}", payload.GeneratedAt,
+		"{{.BaseURL}}", payload.BaseURL,
+		"{{.Mode}}", payload.Mode,
+	)
+
+	output := replacer.Replace(string(tplData))
+	return os.WriteFile(path, []byte(output), 0o644)
+}
+
+func fetchPackageList(client *http.Client, opts Options) ([]string, error) {
+	body, err := fetch(client, opts, opts.BaseURL)
+	if err != nil {
+		return nil, err
+	}
+	links, err := parseLinks(body)
+	if err != nil {
+		return nil, err
+	}
+
+	var packages []string
+	for _, link := range links {
+		if link == "../" {
+			continue
+		}
+		if strings.HasSuffix(link, "/") {
+			packages = append(packages, strings.TrimSuffix(link, "/"))
+		}
+	}
+
+	sort.Strings(packages)
+	return packages, nil
+}
+
+func buildTasks(client *http.Client, opts Options, packages []string) ([]LogTask, error) {
+	var tasks []LogTask
+	for _, pkg := range packages {
+		logf(opts, "reading index for %s", pkg)
+		indexURL := fmt.Sprintf("%s%s/", opts.BaseURL, pkg)
+		body, err := fetch(client, opts, indexURL)
+		if err != nil {
+			return nil, err
+		}
+		links, err := parseLinks(body)
+		if err != nil {
+			return nil, err
+		}
+
+		var dates []string
+		for _, link := range links {
+			if !strings.HasSuffix(link, ".log") {
+				continue
+			}
+			date := strings.TrimSuffix(link, ".log")
+			if _, err := time.Parse("2006-01-02", date); err != nil {
+				continue
+			}
+			dates = append(dates, date)
+		}
+
+		if len(dates) == 0 {
+			continue
+		}
+		sort.Strings(dates)
+
+		if opts.Mode == "all" {
+			for _, date := range dates {
+				tasks = append(tasks, LogTask{
+					Package: pkg,
+					Date:    date,
+					URL:     fmt.Sprintf("%s%s/%s.log", opts.BaseURL, pkg, date),
+				})
+			}
+		} else {
+			latest := dates[len(dates)-1]
+			tasks = append(tasks, LogTask{
+				Package: pkg,
+				Date:    latest,
+				URL:     fmt.Sprintf("%s%s/%s.log", opts.BaseURL, pkg, latest),
+			})
+		}
+	}
+	return tasks, nil
+}
+
+func fetchLogs(client *http.Client, opts Options, tasks []LogTask) []LogEntry {
+	jobs := make(chan LogTask)
+	results := make(chan LogEntry)
+	var wg sync.WaitGroup
+
+	workerCount := opts.Workers
+	if workerCount < 1 {
+		workerCount = 1
+	}
+
+	for i := 0; i < workerCount; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for task := range jobs {
+				entry := LogEntry{Package: task.Package, Date: task.Date, LogURL: task.URL}
+				logf(opts, "fetching log %s", task.URL)
+				body, err := fetch(client, opts, task.URL)
+				if err != nil {
+					entry.Status = "unknown"
+					entry.Error = err.Error()
+					results <- entry
+					continue
+				}
+
+				parseLog(body, &entry)
+				results <- entry
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	go func() {
+		for _, task := range tasks {
+			jobs <- task
+		}
+		close(jobs)
+	}()
+
+	var entries []LogEntry
+	for entry := range results {
+		entries = append(entries, entry)
+	}
+	return entries
+}
+
+func parseLog(body []byte, entry *LogEntry) {
+	text := strings.ReplaceAll(string(body), "\r\n", "\n")
+	lines := strings.Split(text, "\n")
+
+	entry.Status = deriveStatus(text)
+	entry.Summary = deriveSummary(lines, entry.Status)
+	if entry.Status == "failed" {
+		entry.Error = deriveError(lines)
+	}
+
+	if match := updateInfoRegex.FindStringSubmatch(text); len(match) == 5 {
+		entry.OldVersion = match[2]
+		entry.NewVersion = match[3]
+		entry.UpstreamURL = match[4]
+	}
+
+	if match := attrPathRegex.FindStringSubmatch(text); len(match) == 2 {
+		entry.AttrPath = match[1]
+	}
+}
+
+func deriveStatus(text string) string {
+	lower := strings.ToLower(text)
+
+	switch {
+	case strings.Contains(lower, "opts-out of auto-updates") ||
+		strings.Contains(lower, "opts out of auto-updates") ||
+		strings.Contains(lower, "no auto update"):
+		return "opted-out"
+	case strings.Contains(lower, "auto update branch exists with an equal or greater version") ||
+		strings.Contains(lower, "auto update branch exists with an equal or greater"):
+		return "already-updated"
+	case strings.Contains(lower, "error:") ||
+		strings.Contains(lower, "failed with exit code") ||
+		strings.Contains(lower, "build failed") ||
+		strings.Contains(lower, "dependency failed") ||
+		strings.Contains(lower, "cannot build") ||
+		strings.Contains(lower, "failed to build") ||
+		strings.Contains(lower, "failed to download"):
+		return "failed"
+	case strings.Contains(lower, "successfully finished processing") ||
+		strings.Contains(lower, "successfully finished"):
+		return "success"
+	default:
+		return "unknown"
+	}
+}
+
+func deriveSummary(lines []string, status string) string {
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, "Running nixpkgs-update") {
+			continue
+		}
+		if status == "opted-out" && strings.Contains(strings.ToLower(line), "opt") {
+			return line
+		}
+		if strings.Contains(line, "UPDATE_INFO:") {
+			continue
+		}
+		return line
+	}
+	return ""
+}
+
+func deriveError(lines []string) string {
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		lower := strings.ToLower(trimmed)
+		if strings.Contains(lower, "error:") || strings.Contains(lower, "failed") {
+			if len(trimmed) > 240 {
+				return trimmed[:240] + "..."
+			}
+			return trimmed
+		}
+	}
+	return ""
+}
+
+func sortEntries(entries []LogEntry) {
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].Date == entries[j].Date {
+			return entries[i].Package < entries[j].Package
+		}
+		return entries[i].Date > entries[j].Date
+	})
+}
+
+func fetch(client *http.Client, opts Options, url string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", opts.UserAgent)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status %d for %s", resp.StatusCode, url)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+
+func logf(opts Options, format string, args ...any) {
+	if !opts.Verbose {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "verbose: "+format+"\n", args...)
+}
+
+func parseLinks(body []byte) ([]string, error) {
+	doc, err := html.Parse(bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	var links []string
+	var walker func(*html.Node)
+	walker = func(node *html.Node) {
+		if node.Type == html.ElementNode && node.Data == "a" {
+			for _, attr := range node.Attr {
+				if attr.Key == "href" {
+					links = append(links, attr.Val)
+					break
+				}
+			}
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			walker(child)
+		}
+	}
+	walker(doc)
+	if len(links) == 0 {
+		return nil, errors.New("no links found in index")
+	}
+	return links, nil
+}
+
+func EnsureDir(path string) error {
+	return os.MkdirAll(path, 0o755)
+}
+
+func WriteData(path string, payload SiteData) error {
+	if err := EnsureDir(path); err != nil {
+		return err
+	}
+	return WriteJSON(pathJoin(path, "data.json"), payload)
+}
+
+func WriteSite(path string, payload SiteData) error {
+	if err := EnsureDir(path); err != nil {
+		return err
+	}
+	return WriteHTML(pathJoin(path, "index.html"), payload)
+}
+
+func pathJoin(dir, file string) string {
+	return path.Join(dir, file)
+}
