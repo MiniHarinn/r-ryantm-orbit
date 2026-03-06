@@ -152,7 +152,12 @@
           <div class="grid gap-4 md:gap-6 md:grid-cols-[2fr_1.6fr_0.9fr] items-end">
             <div>
               <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-search text-base text-slate-500"></i>Search</label>
-              <input id="searchInput" class="mt-2 w-full rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pulse-400/60" placeholder="Package, upstream URL" />
+              <div class="mt-2 relative">
+                <input id="searchInput" class="w-full rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-pulse-400/60" placeholder="Package, upstream URL" />
+                <button id="clearSearch" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-slate-600/40 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400 hover:text-slate-100 hover:bg-night-800/60 transition hidden" aria-label="Clear search">
+                  Clear
+                </button>
+              </div>
             </div>
             <div>
               <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-filter text-base text-slate-500"></i>Status</label>
@@ -676,13 +681,31 @@
         });
       });
 
+      const clearSearch = document.getElementById("clearSearch");
+      const searchInput = document.getElementById("searchInput");
+      const toggleClearSearch = () => {
+        if (normalizeQuery(searchInput.value)) {
+          clearSearch.classList.remove("hidden");
+        } else {
+          clearSearch.classList.add("hidden");
+        }
+      };
+      clearSearch.addEventListener("click", () => {
+        searchInput.value = "";
+        toggleClearSearch();
+        filterAndRender();
+        searchInput.focus();
+      });
+
       let searchTimer = null;
-      document.getElementById("searchInput").addEventListener("input", () => {
+      searchInput.addEventListener("input", () => {
         if (searchTimer) {
           clearTimeout(searchTimer);
         }
+        toggleClearSearch();
         searchTimer = setTimeout(filterAndRender, 180);
       });
+      toggleClearSearch();
       document.getElementById("sortSelect").addEventListener("change", filterAndRender);
 
       const loadButton = document.getElementById("loadButton");
