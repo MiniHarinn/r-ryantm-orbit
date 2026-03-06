@@ -138,18 +138,18 @@
       <section class="mt-12 grid gap-6">
         <div class="sticky top-4 z-20">
           <div class="rounded-[28px] border border-slate-600/40 bg-night-800/80 p-5 shadow-glow backdrop-blur">
-          <div class="grid gap-4 md:grid-cols-[2fr_1.1fr_1fr]">
+          <div class="grid gap-4 md:gap-6 md:grid-cols-[2fr_1.6fr_0.9fr] items-end">
             <div>
               <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-search text-base text-slate-500"></i>Search</label>
               <input id="searchInput" class="mt-2 w-full rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pulse-400/60" placeholder="Package, attrpath, upstream URL" />
             </div>
             <div>
               <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-filter text-base text-slate-500"></i>Status</label>
-              <div class="mt-2 flex flex-wrap gap-2" id="statusFilters"></div>
+              <div class="mt-2 flex flex-nowrap gap-2 overflow-x-auto pb-1" id="statusFilters"></div>
             </div>
-            <div>
+            <div class="md:justify-self-end">
               <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-sort-ascending-2 text-base text-slate-500"></i>Sort</label>
-              <select id="sortSelect" class="mt-2 w-full rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 text-sm">
+              <select id="sortSelect" class="mt-2 w-full md:max-w-[220px] rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 text-sm">
                 <option value="date_desc">Newest first</option>
                 <option value="date_asc">Oldest first</option>
                 <option value="package_asc">Package A-Z</option>
