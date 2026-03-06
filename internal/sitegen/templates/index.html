@@ -118,10 +118,10 @@
               <span class="text-slate-100">nixpkgs</span>
               <span class="text-gold" id="repoStars">★ --</span>
             </a>
-            <a class="px-3 py-2 rounded-full border border-slate-600/40 bg-night-900/70 shadow-pill hover:bg-night-800/70 transition inline-flex items-center gap-2" href="https://github.com/NixOS/nixpkgs" target="_blank" rel="noopener" data-repo="NixOS/nixpkgs">
+            <a class="px-3 py-2 rounded-full border border-slate-600/40 bg-night-900/70 shadow-pill hover:bg-night-800/70 transition inline-flex items-center gap-2" href="https://github.com/MiniHarinn/r-ryantm-orbit/" target="_blank" rel="noopener" data-repo="MiniHarinn/r-ryantm-orbit">
               <i class="ti ti-brand-github text-base text-slate-300"></i>
               <span class="text-slate-400">GitHub</span>
-              <span class="text-slate-100">nixpkgs</span>
+              <span class="text-slate-100">r-ryantm-orbit</span>
               <span class="text-gold" id="repoStarsSecondary">★ --</span>
             </a>
           </div>
@@ -511,24 +511,24 @@
       async function loadRepoStars() {
         const chips = document.querySelectorAll("[data-repo]");
         if (!chips.length) return;
-        const repo = chips[0].getAttribute("data-repo");
-        if (!repo) return;
-        try {
-          const response = await fetch(`https://api.github.com/repos/${repo}`, { cache: "no-store" });
-          if (!response.ok) return;
-          const payload = await response.json();
-          if (typeof payload.stargazers_count === "number") {
-            const text = `★ ${payload.stargazers_count.toLocaleString()}`;
-            chips.forEach((chip) => {
+        const fetches = Array.from(chips).map(async (chip) => {
+          const repo = chip.getAttribute("data-repo");
+          if (!repo) return;
+          try {
+            const response = await fetch(`https://api.github.com/repos/${repo}`, { cache: "no-store" });
+            if (!response.ok) return;
+            const payload = await response.json();
+            if (typeof payload.stargazers_count === "number") {
               const starEl = chip.querySelector(".text-gold");
               if (starEl) {
-                starEl.textContent = text;
+                starEl.textContent = `★ ${payload.stargazers_count.toLocaleString()}`;
               }
-            });
+            }
+          } catch (err) {
+            // Silent fallback to placeholder.
           }
-        } catch (err) {
-          // Silent fallback to placeholder.
-        }
+        });
+        await Promise.all(fetches);
       }
 
       document.getElementById("searchInput").addEventListener("input", filterAndRender);
