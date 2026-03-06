@@ -83,17 +83,15 @@
     <main class="relative max-w-7xl mx-auto px-6 py-10">
       <header class="grid gap-6 lg:grid-cols-[1fr_1.15fr]">
         <div class="space-y-6">
-          <div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.45em] text-tide-200/80">
+          <div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-tide-200/80">
             <span class="h-px w-10 bg-tide-400/80"></span>
-            r-ryantm update radar
+            nixpkgs-update dashboard
           </div>
           <h1 class="text-4xl md:text-6xl font-semibold leading-tight">
-            The update pipeline,
-            <span class="text-tide-200">made legible.</span>
+            r-ryantm's traces at glances.
           </h1>
           <p class="text-slate-300 max-w-2xl">
-            Browse the latest nixpkgs-update runs, spot failures early, and jump straight to raw logs.
-            This dashboard streams entries in chunks so the UI stays fast.
+            Track nixpkgs-update runs in one place. Filter by status, search by package, and open the raw logs when something fails.
           </p>
         </div>
         <div class="rounded-[32px] border border-slate-600/40 bg-ink-800/70 p-6 shadow-panel">
@@ -131,10 +129,7 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-between text-xs text-slate-400">
-          <div>Streaming entries from <span class="font-mono">index.json</span></div>
-          <div class="font-mono" id="progressText">Loading entries…</div>
-        </div>
+        <div class="hidden" id="progressText">Loading entries…</div>
 
         <div id="emptyState" class="hidden rounded-3xl border border-dashed border-slate-600/50 p-10 text-center text-slate-300">
           No packages match the current filters.
@@ -151,10 +146,10 @@
 
     <script>
       const STATUS_META = {
-        completed: { label: "Completed", className: "border-jade/40 bg-jade/10 text-jade" },
-        failed: { label: "Failed", className: "border-ember/40 bg-ember/10 text-ember" },
-        "opted-out": { label: "Opted out", className: "border-gold/50 bg-gold/10 text-gold" },
-        unknown: { label: "Unknown", className: "border-slate-400/40 bg-slate-500/10 text-slate-200" },
+        completed: { label: "Completed", className: "border-jade/40 bg-jade/10 text-jade", borderClass: "border-l-jade" },
+        failed: { label: "Failed", className: "border-ember/40 bg-ember/10 text-ember", borderClass: "border-l-ember" },
+        "opted-out": { label: "Opted out", className: "border-gold/50 bg-gold/10 text-gold", borderClass: "border-l-gold" },
+        unknown: { label: "Unknown", className: "border-slate-400/40 bg-slate-500/10 text-slate-200", borderClass: "border-l-slate-400" },
       };
 
       const state = {
@@ -302,7 +297,7 @@
           const safeUpstreamUrl = safeUrl(entry.upstream_url);
 
           const card = document.createElement("article");
-          card.className = "rounded-3xl border border-slate-600/40 bg-ink-800/70 p-5 shadow-glow flex flex-col gap-4 opacity-0";
+          card.className = `rounded-3xl border border-slate-600/40 ${meta.borderClass} border-l-4 bg-ink-800/70 p-5 shadow-glow flex flex-col gap-4 opacity-0`;
           card.style.animationDelay = `${Math.min(index * 30, 300)}ms`;
           card.classList.add("animate-rise");
 
@@ -320,15 +315,15 @@
 
           card.innerHTML = `
             <div class=\"flex items-start justify-between gap-3\">
-              <div>
-                <h3 class=\"text-xl font-semibold\">${safePackage}</h3>
+              <div class=\"min-w-0\">
+                <h3 class=\"text-lg font-semibold break-words\">${safePackage}</h3>
                 <div class=\"text-xs text-slate-400 font-mono\">${safeDate}</div>
               </div>
-              <div class=\"px-3 py-1 text-xs border rounded-full ${meta.className}\">${meta.label}</div>
+              <div class=\"text-[11px] uppercase tracking-[0.22em] text-slate-400\">${meta.label}</div>
             </div>
-            <div class=\"grid gap-2 text-xs md:grid-cols-2\">
-              <div class=\"rounded-xl border border-slate-600/40 bg-ink-900/60 px-3 py-2 font-mono text-slate-300 break-words\">${safeAttr}</div>
-              <div class=\"rounded-xl border border-slate-600/40 bg-ink-900/60 px-3 py-2 text-slate-200\">${versionLine}</div>
+            <div class=\"rounded-2xl border border-slate-600/40 bg-ink-900/70 px-4 py-3\">
+              <div class=\"text-xs uppercase tracking-[0.2em] text-slate-400\">Version change</div>
+              <div class=\"mt-2 text-lg font-semibold text-slate-100\">${versionLine}</div>
             </div>
             ${summaryLine}
             ${errorLine}
