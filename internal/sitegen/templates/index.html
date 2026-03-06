@@ -416,7 +416,7 @@
         });
         renderCards(state.filtered.slice(0, state.renderLimit));
         if (!state.lastQuery && state.filtered.length === 0 && state.nextChunkIndex < state.chunks.length) {
-          loadUntilMatches();
+          loadUntilMatches(1, 8);
         }
       }
 
@@ -533,6 +533,7 @@
         state.loading = false;
         filterAndRender();
         updateProgress();
+        autoFillViewport();
       }
 
       async function loadNextChunk() {
@@ -543,14 +544,37 @@
         await loadChunk(chunk);
       }
 
-      async function loadUntilMatches() {
+      function hasActiveFilters(query) {
+        return state.activeStatuses.size > 0 || query.length > 0;
+      }
+
+      function isLoadMoreVisible() {
+        const loadMore = document.getElementById("loadMore");
+        if (!loadMore) return false;
+        const rect = loadMore.getBoundingClientRect();
+        return rect.top <= window.innerHeight + 200;
+      }
+
+      async function autoFillViewport() {
+        if (!hasActiveFilters(state.lastQuery)) return;
         if (state.loading) return;
-        if (state.nextChunkIndex >= state.chunks.length) return;
         let safety = 0;
-        while (state.filtered.length === 0 && state.nextChunkIndex < state.chunks.length) {
+        while (isLoadMoreVisible() && state.nextChunkIndex < state.chunks.length) {
           await loadNextChunk();
           safety += 1;
-          if (safety > state.chunks.length) break;
+          if (safety >= 4) break;
+        }
+      }
+
+      async function loadUntilMatches(minIncrease = 1, maxChunks = 8) {
+        if (state.loading) return;
+        if (state.nextChunkIndex >= state.chunks.length) return;
+        const startCount = state.filtered.length;
+        let safety = 0;
+        while (state.filtered.length < startCount + minIncrease && state.nextChunkIndex < state.chunks.length) {
+          await loadNextChunk();
+          safety += 1;
+          if (safety >= maxChunks) break;
         }
       }
 
@@ -607,19 +631,22 @@
 
       const loadButton = document.getElementById("loadButton");
       loadButton.addEventListener("click", () => {
-        const search = normalizeQuery(document.getElementById("searchInput").value);
-        if (search) {
+        const query = normalizeQuery(document.getElementById("searchInput").value);
+        if (query) {
           state.renderLimit += state.renderStep;
           filterAndRender();
+        }
+        if (hasActiveFilters(query)) {
+          loadUntilMatches(10, 8);
           return;
         }
-        loadUntilMatches();
+        loadUntilMatches(1, 8);
       });
 
       const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            loadNextChunk();
+            loadNextChunk().then(autoFillViewport);
           }
         });
       }, { rootMargin: "200px" });
