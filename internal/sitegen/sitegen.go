@@ -24,7 +24,6 @@ var templateFS embed.FS
 
 var (
 	updateInfoRegex = regexp.MustCompile(`(?i)([\w.+-]+)\s+([^\s]+)\s+->\s+([^\s]+)\s+(https?://[^\s]+)`) // pkg old -> new url
-	attrPathRegex   = regexp.MustCompile(`(?i)attrpath:\s*([^\s]+)`)                               // attrpath: foo
 )
 
 type LogTask struct {
@@ -40,7 +39,6 @@ type LogEntry struct {
 	Status      string `json:"status"`
 	OldVersion  string `json:"old_version,omitempty"`
 	NewVersion  string `json:"new_version,omitempty"`
-	AttrPath    string `json:"attrpath,omitempty"`
 	UpstreamURL string `json:"upstream_url,omitempty"`
 	Error       string `json:"error,omitempty"`
 }
@@ -364,9 +362,6 @@ func parseLog(body []byte, entry *LogEntry) {
 		entry.UpstreamURL = match[4]
 	}
 
-	if match := attrPathRegex.FindStringSubmatch(text); len(match) == 2 {
-		entry.AttrPath = match[1]
-	}
 }
 
 func deriveStatus(text string) string {

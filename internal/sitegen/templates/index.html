@@ -108,14 +108,14 @@
             r-ryantm's package orbit.
           </h1>
           <p class="text-slate-300 max-w-2xl text-lg">
-            Track nixpkgs-update runs in one place. Filter by status, search by package, and open raw logs when something fails.
+            Track nixpkgs-update runs in one place. (Vibecoded ✌️)
           </p>
           <div class="flex flex-wrap gap-3 text-xs text-slate-300">
-            <a class="px-3 py-2 rounded-full border border-slate-600/40 bg-night-900/70 shadow-pill hover:bg-night-800/70 transition inline-flex items-center gap-2" href="https://github.com/NixOS/nixpkgs" target="_blank" rel="noopener">
+            <a class="px-3 py-2 rounded-full border border-slate-600/40 bg-night-900/70 shadow-pill hover:bg-night-800/70 transition inline-flex items-center gap-2" href="https://github.com/NixOS/nixpkgs" target="_blank" rel="noopener" data-repo="NixOS/nixpkgs">
               <i class="ti ti-brand-github text-base text-slate-300"></i>
               <span class="text-slate-400">GitHub</span>
               <span class="text-slate-100">nixpkgs</span>
-              <span class="text-gold">★ --</span>
+              <span class="text-gold" id="repoStars">★ --</span>
             </a>
           </div>
         </div>
@@ -252,7 +252,7 @@
 
       function matchesSearch(entry, search) {
         if (!search) return true;
-        const haystack = `${entry.package} ${entry.attrpath || ""} ${entry.upstream_url || ""}`.toLowerCase();
+        const haystack = `${entry.package} ${entry.upstream_url || ""}`.toLowerCase();
         return haystack.includes(search);
       }
 
@@ -496,6 +496,24 @@
         await loadNextChunk();
       }
 
+      async function loadRepoStars() {
+        const chip = document.querySelector("[data-repo]");
+        const starEl = document.getElementById("repoStars");
+        if (!chip || !starEl) return;
+        const repo = chip.getAttribute("data-repo");
+        if (!repo) return;
+        try {
+          const response = await fetch(`https://api.github.com/repos/${repo}`, { cache: "no-store" });
+          if (!response.ok) return;
+          const payload = await response.json();
+          if (typeof payload.stargazers_count === "number") {
+            starEl.textContent = `★ ${payload.stargazers_count.toLocaleString()}`;
+          }
+        } catch (err) {
+          // Silent fallback to placeholder.
+        }
+      }
+
       document.getElementById("searchInput").addEventListener("input", filterAndRender);
       document.getElementById("sortSelect").addEventListener("change", filterAndRender);
 
@@ -513,6 +531,7 @@
       observer.observe(document.getElementById("loadMore"));
 
       loadIndex();
+      loadRepoStars();
     </script>
   </body>
 </html>
