@@ -206,6 +206,13 @@
       Top
     </button>
 
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-6 md:translate-x-0 z-50 hidden items-center gap-3 rounded-2xl border border-slate-600/40 bg-night-950/90 px-4 py-3 text-xs uppercase tracking-[0.24em] text-slate-100 shadow-glow backdrop-blur">
+      <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-jade/15 border border-jade/40">
+        <i class="ti ti-check text-base text-jade"></i>
+      </span>
+      <span id="toastMessage">Copied</span>
+    </div>
+
     <script>
       const STATUS_META = {
         completed: { label: "Completed", className: "border-jade/40 bg-jade/10 text-jade", borderClass: "border-l-jade" },
@@ -484,7 +491,6 @@
                 <h3 class=\"text-base font-semibold\">
                   <button type=\"button\" class=\"text-left inline-flex items-center gap-2 hover:text-slate-100 transition\" data-copy-package=\"${safePackage}\" aria-label=\"Copy package name\">
                     <span class=\"break-words\">${safePackage}</span>
-                    <span class=\"text-[10px] uppercase tracking-[0.2em] text-slate-500 border border-slate-600/50 px-2 py-0.5 rounded-full hidden\" data-copy-feedback>Copied</span>
                     <i class=\"ti ti-copy text-base text-slate-500\"></i>
                   </button>
                 </h3>
@@ -653,29 +659,34 @@
         });
       }
 
-      const copyTimers = new WeakMap();
       const cards = document.getElementById("cards");
+      const toast = document.getElementById("toast");
+      const toastMessage = document.getElementById("toastMessage");
+      let toastTimer = null;
+
+      function showToast(message) {
+        if (!toast) return;
+        if (toastMessage) {
+          toastMessage.textContent = message;
+        }
+        toast.classList.remove("hidden");
+        toast.classList.add("flex");
+        if (toastTimer) {
+          clearTimeout(toastTimer);
+        }
+        toastTimer = setTimeout(() => {
+          toast.classList.add("hidden");
+          toast.classList.remove("flex");
+        }, 1400);
+      }
+
       cards.addEventListener("click", (event) => {
         const button = event.target.closest("[data-copy-package]");
         if (!button) return;
         const value = button.getAttribute("data-copy-package");
         if (!value) return;
         copyText(value).then(() => {
-          const feedback = button.querySelector("[data-copy-feedback]");
-          if (feedback) {
-            feedback.classList.remove("hidden");
-          }
-          const previousTimer = copyTimers.get(button);
-          if (previousTimer) {
-            clearTimeout(previousTimer);
-          }
-          const timer = setTimeout(() => {
-            if (feedback) {
-              feedback.classList.add("hidden");
-            }
-            copyTimers.delete(button);
-          }, 1200);
-          copyTimers.set(button, timer);
+          showToast("Copied");
         }).catch(() => {
           // Silent fallback if clipboard is blocked.
         });
