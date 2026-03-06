@@ -191,6 +191,11 @@
       </section>
     </main>
 
+    <button id="backToTop" class="fixed bottom-6 right-6 hidden items-center gap-2 rounded-full border border-slate-600/40 bg-night-900/80 px-4 py-2 text-xs uppercase tracking-[0.2em] text-slate-200 shadow-glow backdrop-blur hover:bg-night-800/80 transition">
+      <i class="ti ti-arrow-up text-base"></i>
+      Top
+    </button>
+
     <script>
       const STATUS_META = {
         completed: { label: "Completed", className: "border-jade/40 bg-jade/10 text-jade", borderClass: "border-l-jade" },
@@ -543,6 +548,22 @@
 
       loadIndex();
       loadRepoStars();
+
+      const backToTop = document.getElementById("backToTop");
+      const toggleBackToTop = () => {
+        if (window.scrollY > 400) {
+          backToTop.classList.remove("hidden");
+          backToTop.classList.add("flex");
+        } else {
+          backToTop.classList.add("hidden");
+          backToTop.classList.remove("flex");
+        }
+      };
+      window.addEventListener("scroll", toggleBackToTop, { passive: true });
+      toggleBackToTop();
+      backToTop.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
     </script>
   </body>
 </html>
