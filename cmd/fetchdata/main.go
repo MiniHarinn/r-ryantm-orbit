@@ -20,6 +20,7 @@ func main() {
 	flag.StringVar(&outDir, "out", outDir, "output directory")
 	flag.StringVar(&opts.Mode, "mode", "latest", "mode: latest or all")
 	flag.IntVar(&opts.Workers, "workers", 16, "number of concurrent workers")
+	flag.IntVar(&opts.IndexWorkers, "index-workers", 8, "concurrent workers for package indexes")
 	flag.IntVar(&opts.MaxPackages, "max-packages", 0, "limit number of packages (0 = no limit)")
 	flag.DurationVar(&opts.HTTPTimeout, "timeout", 45*time.Second, "HTTP timeout")
 	flag.StringVar(&opts.UserAgent, "user-agent", "fast-rrytm-sitegen/1.0", "HTTP user agent")

@@ -57,6 +57,7 @@ type Options struct {
 	BaseURL     string
 	Mode        string
 	Workers     int
+	IndexWorkers int
 	MaxPackages int
 	HTTPTimeout time.Duration
 	UserAgent   string
@@ -77,7 +78,7 @@ func FetchAndParse(client *http.Client, opts Options) (SiteData, error) {
 	}
 
 	logf(opts, "building log tasks (mode=%s)", opts.Mode)
-	tasks, err := buildTasks(client, opts, packages)
+	tasks, err := buildTasksConcurrent(client, opts, packages)
 	if err != nil {
 		return SiteData{}, err
 	}
@@ -154,53 +155,106 @@ func fetchPackageList(client *http.Client, opts Options) ([]string, error) {
 	return packages, nil
 }
 
-func buildTasks(client *http.Client, opts Options, packages []string) ([]LogTask, error) {
+func buildTasksConcurrent(client *http.Client, opts Options, packages []string) ([]LogTask, error) {
+	type result struct {
+		tasks []LogTask
+		err   error
+	}
+
+	workerCount := opts.IndexWorkers
+	if workerCount < 1 {
+		workerCount = opts.Workers
+	}
+	if workerCount < 1 {
+		workerCount = 1
+	}
+
+	jobs := make(chan string)
+	results := make(chan result)
+	var wg sync.WaitGroup
+
+	for i := 0; i < workerCount; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for pkg := range jobs {
+				logf(opts, "reading index for %s", pkg)
+				indexURL := fmt.Sprintf("%s%s/", opts.BaseURL, pkg)
+				body, err := fetch(client, opts, indexURL)
+				if err != nil {
+					results <- result{err: err}
+					continue
+				}
+				links, err := parseLinks(body)
+				if err != nil {
+					results <- result{err: err}
+					continue
+				}
+
+				var dates []string
+				for _, link := range links {
+					if !strings.HasSuffix(link, ".log") {
+						continue
+					}
+					date := strings.TrimSuffix(link, ".log")
+					if _, err := time.Parse("2006-01-02", date); err != nil {
+						continue
+					}
+					dates = append(dates, date)
+				}
+
+				if len(dates) == 0 {
+					results <- result{tasks: nil}
+					continue
+				}
+				sort.Strings(dates)
+
+				var pkgTasks []LogTask
+				if opts.Mode == "all" {
+					for _, date := range dates {
+						pkgTasks = append(pkgTasks, LogTask{
+							Package: pkg,
+							Date:    date,
+							URL:     fmt.Sprintf("%s%s/%s.log", opts.BaseURL, pkg, date),
+						})
+					}
+				} else {
+					latest := dates[len(dates)-1]
+					pkgTasks = append(pkgTasks, LogTask{
+						Package: pkg,
+						Date:    latest,
+						URL:     fmt.Sprintf("%s%s/%s.log", opts.BaseURL, pkg, latest),
+					})
+				}
+				results <- result{tasks: pkgTasks}
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	go func() {
+		for _, pkg := range packages {
+			jobs <- pkg
+		}
+		close(jobs)
+	}()
+
 	var tasks []LogTask
-	for _, pkg := range packages {
-		logf(opts, "reading index for %s", pkg)
-		indexURL := fmt.Sprintf("%s%s/", opts.BaseURL, pkg)
-		body, err := fetch(client, opts, indexURL)
-		if err != nil {
-			return nil, err
-		}
-		links, err := parseLinks(body)
-		if err != nil {
-			return nil, err
-		}
-
-		var dates []string
-		for _, link := range links {
-			if !strings.HasSuffix(link, ".log") {
-				continue
-			}
-			date := strings.TrimSuffix(link, ".log")
-			if _, err := time.Parse("2006-01-02", date); err != nil {
-				continue
-			}
-			dates = append(dates, date)
-		}
-
-		if len(dates) == 0 {
+	var errs []error
+	for res := range results {
+		if res.err != nil {
+			errs = append(errs, res.err)
 			continue
 		}
-		sort.Strings(dates)
+		tasks = append(tasks, res.tasks...)
+	}
 
-		if opts.Mode == "all" {
-			for _, date := range dates {
-				tasks = append(tasks, LogTask{
-					Package: pkg,
-					Date:    date,
-					URL:     fmt.Sprintf("%s%s/%s.log", opts.BaseURL, pkg, date),
-				})
-			}
-		} else {
-			latest := dates[len(dates)-1]
-			tasks = append(tasks, LogTask{
-				Package: pkg,
-				Date:    latest,
-				URL:     fmt.Sprintf("%s%s/%s.log", opts.BaseURL, pkg, latest),
-			})
-		}
+	if len(errs) > 0 {
+		return nil, errs[0]
 	}
 	return tasks, nil
 }
