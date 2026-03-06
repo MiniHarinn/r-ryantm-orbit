@@ -221,11 +221,74 @@
         prefixIndex: {},
         prefixData: {},
         loadedPrefixes: new Set(),
-        searchIndex: {},
+        searchIndex: new Map(),
         renderLimit: 200,
         renderStep: 200,
-        lastSearch: "",
+        lastQuery: "",
+        lastSort: "date_desc",
       };
+
+      const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+
+      function normalizeStatus(status) {
+        if (status === "success" || status === "already-updated") {
+          return "completed";
+        }
+        return status || "unknown";
+      }
+
+      function normalizeQuery(value) {
+        return String(value || "")
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, " ");
+      }
+
+      function tokenizeQuery(value) {
+        const normalized = normalizeQuery(value);
+        if (!normalized) return [];
+        return normalized.split(/[^a-z0-9._/-]+/).filter(Boolean);
+      }
+
+      function entryKey(entry) {
+        return `${entry.package}::${entry.date}`;
+      }
+
+      function buildSearchIndex(entry) {
+        const safe = (val) => String(val || "");
+        const haystack = `${safe(entry.package)} ${safe(entry.upstream_url)} ${safe(entry.old_version)} ${safe(entry.new_version)}`.toLowerCase();
+        return haystack;
+      }
+
+      function ensureIndexed(entry) {
+        const key = entryKey(entry);
+        if (state.searchIndex.has(key)) return;
+        state.searchIndex.set(key, buildSearchIndex(entry));
+      }
+
+      function matchesSearch(entry, tokens) {
+        if (!tokens.length) return true;
+        const key = entryKey(entry);
+        const haystack = state.searchIndex.get(key) || buildSearchIndex(entry);
+        state.searchIndex.set(key, haystack);
+        return tokens.every((token) => haystack.includes(token));
+      }
+
+      function prefixKeyFromSearch(search) {
+        const letters = [];
+        for (const ch of search) {
+          const code = ch.charCodeAt(0);
+          if (code >= 97 && code <= 122) {
+            letters.push(ch);
+            if (letters.length === 2) break;
+          } else if (letters.length > 0) {
+            break;
+          }
+        }
+        if (letters.length === 2) return letters.join("");
+        if (letters.length === 1) return `${letters[0]}_`;
+        return "other";
+      }
 
       function createStatCard(label, value, accent, icon) {
         const card = document.createElement("div");
@@ -255,8 +318,10 @@
         container.innerHTML = "";
         Object.entries(STATUS_META).forEach(([key, meta]) => {
           const button = document.createElement("button");
-          button.className = `px-3 py-1 rounded-full text-xs border ${meta.className} transition ${state.activeStatuses.has(key) ? "opacity-100 shadow-pill" : "opacity-60"}`;
+          const isActive = state.activeStatuses.has(key);
+          button.className = `px-3 py-1 rounded-full text-xs border ${meta.className} transition ${isActive ? "opacity-100 shadow-pill" : "opacity-60"}`;
           button.textContent = meta.label;
+          button.setAttribute("aria-pressed", String(isActive));
           button.addEventListener("click", () => {
             if (state.activeStatuses.has(key)) {
               state.activeStatuses.delete(key);
@@ -270,33 +335,23 @@
         });
       }
 
-      function matchesSearch(entry, search) {
-        if (!search) return true;
-        const key = entryKey(entry);
-        const haystack = state.searchIndex[key] || `${entry.package} ${entry.upstream_url || ""}`.toLowerCase();
-        return haystack.includes(search);
-      }
-
-      function normalizeStatus(status) {
-        if (status === "success" || status === "already-updated") {
-          return "completed";
-        }
-        return status || "unknown";
-      }
-
       function sortEntries(entries, sortKey) {
         const list = [...entries];
         switch (sortKey) {
           case "date_asc":
-            return list.sort((a, b) => a.date.localeCompare(b.date));
+            return list.sort((a, b) => String(a.date).localeCompare(String(b.date)));
           case "date_desc":
-            return list.sort((a, b) => b.date.localeCompare(a.date));
+            return list.sort((a, b) => String(b.date).localeCompare(String(a.date)));
           case "package_desc":
-            return list.sort((a, b) => b.package.localeCompare(a.package));
+            return list.sort((a, b) => collator.compare(String(b.package), String(a.package)));
           case "package_asc":
-            return list.sort((a, b) => a.package.localeCompare(b.package));
+            return list.sort((a, b) => collator.compare(String(a.package), String(b.package)));
           case "status":
-            return list.sort((a, b) => normalizeStatus(a.status).localeCompare(normalizeStatus(b.status)) || b.date.localeCompare(a.date));
+            return list.sort((a, b) => {
+              const statusCompare = collator.compare(normalizeStatus(a.status), normalizeStatus(b.status));
+              if (statusCompare !== 0) return statusCompare;
+              return String(b.date).localeCompare(String(a.date));
+            });
           default:
             return list;
         }
@@ -309,6 +364,7 @@
           const key = entryKey(entry);
           if (seen.has(key)) return;
           seen.add(key);
+          ensureIndexed(entry);
           combined.push(entry);
         };
         state.data.forEach(addEntry);
@@ -318,71 +374,39 @@
         return combined;
       }
 
-      function entryKey(entry) {
-        return `${entry.package}::${entry.date}`;
-      }
-
-      function indexEntries(entries) {
-        entries.forEach((entry) => {
-          const key = entryKey(entry);
-          if (state.searchIndex[key]) return;
-          state.searchIndex[key] = `${entry.package} ${entry.upstream_url || ""}`.toLowerCase();
-        });
-      }
-
-      function prefixKeyFromSearch(search) {
-        const letters = [];
-        for (const ch of search) {
-          const code = ch.charCodeAt(0);
-          if (code >= 97 && code <= 122) {
-            letters.push(ch);
-            if (letters.length === 2) break;
-          } else if (letters.length > 0) {
-            break;
-          }
-        }
-        if (letters.length === 2) return letters.join("");
-        if (letters.length === 1) return `${letters[0]}_`;
-        return "other";
-      }
-
-      async function loadPrefix(key) {
-        if (!key) return;
-        if (state.loadedPrefixes.has(key)) return;
-        const info = state.prefixIndex[key];
-        if (!info) return;
-        state.loadedPrefixes.add(key);
-        const response = await fetch(info.file, { cache: "no-store" });
-        const payload = await response.json();
-        state.prefixData[key] = payload.entries || [];
-        indexEntries(state.prefixData[key]);
-        filterAndRender();
-      }
-
-      function filterAndRender() {
-        const search = document.getElementById("searchInput").value.trim().toLowerCase();
+      function applyFilters() {
+        const searchInput = document.getElementById("searchInput");
         const sortKey = document.getElementById("sortSelect").value;
+        const query = normalizeQuery(searchInput.value);
+        const tokens = tokenizeQuery(query);
 
-        if (search !== state.lastSearch) {
+        if (query !== state.lastQuery) {
           state.renderLimit = 200;
-          state.lastSearch = search;
+          state.lastQuery = query;
         }
+        state.lastSort = sortKey;
 
-        if (search) {
-          const key = prefixKeyFromSearch(search);
+        if (query) {
+          const key = prefixKeyFromSearch(query);
           if (key && !state.loadedPrefixes.has(key)) {
             loadPrefix(key);
           }
         }
 
         const combined = combineEntries();
-        state.filtered = combined.filter((entry) => {
+        const filtered = [];
+        for (const entry of combined) {
           const status = normalizeStatus(entry.status);
-          const statusMatch = state.activeStatuses.size === 0 || state.activeStatuses.has(status);
-          return statusMatch && matchesSearch(entry, search);
-        });
+          if (state.activeStatuses.size && !state.activeStatuses.has(status)) continue;
+          if (!matchesSearch(entry, tokens)) continue;
+          filtered.push(entry);
+        }
 
-        state.filtered = sortEntries(state.filtered, sortKey);
+        state.filtered = sortEntries(filtered, sortKey);
+      }
+
+      function filterAndRender() {
+        applyFilters();
         renderStats({
           total: state.total,
           success: state.statusTotals.success,
@@ -391,7 +415,7 @@
           "already-updated": state.statusTotals["already-updated"],
         });
         renderCards(state.filtered.slice(0, state.renderLimit));
-        if (!search && state.filtered.length === 0 && state.nextChunkIndex < state.chunks.length) {
+        if (!state.lastQuery && state.filtered.length === 0 && state.nextChunkIndex < state.chunks.length) {
           loadUntilMatches();
         }
       }
@@ -485,6 +509,19 @@
         }
       }
 
+      async function loadPrefix(key) {
+        if (!key) return;
+        if (state.loadedPrefixes.has(key)) return;
+        const info = state.prefixIndex[key];
+        if (!info) return;
+        state.loadedPrefixes.add(key);
+        const response = await fetch(info.file, { cache: "no-store" });
+        const payload = await response.json();
+        state.prefixData[key] = payload.entries || [];
+        (payload.entries || []).forEach(ensureIndexed);
+        filterAndRender();
+      }
+
       async function loadChunk(chunk) {
         if (!chunk) return;
         state.loading = true;
@@ -492,7 +529,7 @@
         const response = await fetch(chunk.file, { cache: "no-store" });
         const payload = await response.json();
         state.data = state.data.concat(payload.entries || []);
-        indexEntries(payload.entries || []);
+        (payload.entries || []).forEach(ensureIndexed);
         state.loading = false;
         filterAndRender();
         updateProgress();
@@ -564,13 +601,13 @@
         if (searchTimer) {
           clearTimeout(searchTimer);
         }
-        searchTimer = setTimeout(filterAndRender, 200);
+        searchTimer = setTimeout(filterAndRender, 180);
       });
       document.getElementById("sortSelect").addEventListener("change", filterAndRender);
 
       const loadButton = document.getElementById("loadButton");
       loadButton.addEventListener("click", () => {
-        const search = document.getElementById("searchInput").value.trim();
+        const search = normalizeQuery(document.getElementById("searchInput").value);
         if (search) {
           state.renderLimit += state.renderStep;
           filterAndRender();
