@@ -234,6 +234,7 @@
         prefixData: {},
         loadedPrefixes: new Set(),
         searchIndex: new Map(),
+        lastRenderKeys: "",
         renderLimit: 200,
         renderStep: 200,
         lastQuery: "",
@@ -426,10 +427,16 @@
           "opted-out": state.statusTotals["opted-out"],
           "already-updated": state.statusTotals["already-updated"],
         });
-        renderCards(state.filtered.slice(0, state.renderLimit));
+        const visible = state.filtered.slice(0, state.renderLimit);
+        const visibleKeys = visible.map(entryKey).join("|");
+        if (visibleKeys !== state.lastRenderKeys) {
+          renderCards(visible);
+          state.lastRenderKeys = visibleKeys;
+        }
         if (!state.lastQuery && state.filtered.length === 0 && state.nextChunkIndex < state.chunks.length) {
           loadUntilMatches(1, 8);
         }
+        updateObserver();
       }
 
       function escapeHtml(value) {
@@ -741,7 +748,17 @@
         });
       }, { rootMargin: "200px" });
 
-      observer.observe(document.getElementById("loadMore"));
+      function updateObserver() {
+        const loadMore = document.getElementById("loadMore");
+        if (!loadMore) return;
+        if (hasActiveFilters(state.lastQuery)) {
+          observer.unobserve(loadMore);
+        } else {
+          observer.observe(loadMore);
+        }
+      }
+
+      updateObserver();
 
       loadIndex();
       loadRepoStars();
