@@ -92,6 +92,10 @@
         background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2"/></filter><rect width="200" height="200" filter="url(%23n)" opacity="0.5"/></svg>');
         mix-blend-mode: soft-light;
       }
+      .card {
+        content-visibility: auto;
+        contain-intrinsic-size: 380px;
+      }
     </style>
   </head>
   <body class="font-display text-slate-100 min-h-screen">
@@ -148,7 +152,7 @@
           <div class="grid gap-4 md:gap-6 md:grid-cols-[2fr_1.6fr_0.9fr] items-end">
             <div>
               <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-search text-base text-slate-500"></i>Search</label>
-              <input id="searchInput" class="mt-2 w-full rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pulse-400/60" placeholder="Package, attrpath, upstream URL" />
+              <input id="searchInput" class="mt-2 w-full rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pulse-400/60" placeholder="Package, upstream URL" />
             </div>
             <div>
               <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-filter text-base text-slate-500"></i>Status</label>
@@ -217,6 +221,10 @@
         prefixIndex: {},
         prefixData: {},
         loadedPrefixes: new Set(),
+        searchIndex: {},
+        renderLimit: 200,
+        renderStep: 200,
+        lastSearch: "",
       };
 
       function createStatCard(label, value, accent, icon) {
@@ -264,7 +272,8 @@
 
       function matchesSearch(entry, search) {
         if (!search) return true;
-        const haystack = `${entry.package} ${entry.upstream_url || ""}`.toLowerCase();
+        const key = entryKey(entry);
+        const haystack = state.searchIndex[key] || `${entry.package} ${entry.upstream_url || ""}`.toLowerCase();
         return haystack.includes(search);
       }
 
@@ -297,7 +306,7 @@
         const combined = [];
         const seen = new Set();
         const addEntry = (entry) => {
-          const key = `${entry.package}::${entry.date}`;
+          const key = entryKey(entry);
           if (seen.has(key)) return;
           seen.add(key);
           combined.push(entry);
@@ -307,6 +316,18 @@
           entries.forEach(addEntry);
         });
         return combined;
+      }
+
+      function entryKey(entry) {
+        return `${entry.package}::${entry.date}`;
+      }
+
+      function indexEntries(entries) {
+        entries.forEach((entry) => {
+          const key = entryKey(entry);
+          if (state.searchIndex[key]) return;
+          state.searchIndex[key] = `${entry.package} ${entry.upstream_url || ""}`.toLowerCase();
+        });
       }
 
       function prefixKeyFromSearch(search) {
@@ -334,12 +355,18 @@
         const response = await fetch(info.file, { cache: "no-store" });
         const payload = await response.json();
         state.prefixData[key] = payload.entries || [];
+        indexEntries(state.prefixData[key]);
         filterAndRender();
       }
 
       function filterAndRender() {
         const search = document.getElementById("searchInput").value.trim().toLowerCase();
         const sortKey = document.getElementById("sortSelect").value;
+
+        if (search !== state.lastSearch) {
+          state.renderLimit = 200;
+          state.lastSearch = search;
+        }
 
         if (search) {
           const key = prefixKeyFromSearch(search);
@@ -363,7 +390,7 @@
           "opted-out": state.statusTotals["opted-out"],
           "already-updated": state.statusTotals["already-updated"],
         });
-        renderCards(state.filtered);
+        renderCards(state.filtered.slice(0, state.renderLimit));
         if (!search && state.filtered.length === 0 && state.nextChunkIndex < state.chunks.length) {
           loadUntilMatches();
         }
@@ -402,7 +429,6 @@
           const meta = STATUS_META[normalizedStatus] || STATUS_META.unknown;
           const safePackage = escapeHtml(entry.package);
           const safeDate = escapeHtml(entry.date);
-          const safeAttr = escapeHtml(entry.attrpath || "attrpath unavailable");
           const safeOld = escapeHtml(entry.old_version);
           const safeNew = escapeHtml(entry.new_version);
           const safeError = escapeHtml(entry.error || "");
@@ -411,6 +437,7 @@
 
           const card = document.createElement("article");
           card.className = `rounded-3xl border border-slate-600/40 ${meta.borderClass} border-l-4 bg-night-800/70 p-4 shadow-glow flex flex-col gap-3 opacity-0`;
+          card.classList.add("card");
           card.style.animationDelay = `${Math.min(index * 30, 300)}ms`;
           card.classList.add("animate-rise");
 
@@ -465,6 +492,7 @@
         const response = await fetch(chunk.file, { cache: "no-store" });
         const payload = await response.json();
         state.data = state.data.concat(payload.entries || []);
+        indexEntries(payload.entries || []);
         state.loading = false;
         filterAndRender();
         updateProgress();
@@ -531,11 +559,25 @@
         await Promise.all(fetches);
       }
 
-      document.getElementById("searchInput").addEventListener("input", filterAndRender);
+      let searchTimer = null;
+      document.getElementById("searchInput").addEventListener("input", () => {
+        if (searchTimer) {
+          clearTimeout(searchTimer);
+        }
+        searchTimer = setTimeout(filterAndRender, 200);
+      });
       document.getElementById("sortSelect").addEventListener("change", filterAndRender);
 
       const loadButton = document.getElementById("loadButton");
-      loadButton.addEventListener("click", loadUntilMatches);
+      loadButton.addEventListener("click", () => {
+        const search = document.getElementById("searchInput").value.trim();
+        if (search) {
+          state.renderLimit += state.renderStep;
+          filterAndRender();
+          return;
+        }
+        loadUntilMatches();
+      });
 
       const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
