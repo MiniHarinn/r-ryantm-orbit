@@ -1,0 +1,36 @@
+version: "3"
+
+vars:
+  DIST_DIR: dist
+  PORT: "8080"
+
+silent: false
+
+includes: []
+
+tasks:
+  fetch:
+    desc: Fetch and parse logs into data.json
+    cmds:
+      - nix develop --command go run ./cmd/fetchdata -out {{.DIST_DIR}}
+
+  build:
+    desc: Build site from existing data.json
+    cmds:
+      - nix develop --command go run ./cmd/sitebuild -out {{.DIST_DIR}} -data {{.DIST_DIR}}/data.json
+
+  all:
+    desc: Fetch data then build site
+    cmds:
+      - task: fetch
+      - task: build
+
+  serve:
+    desc: Serve dist/ via Caddy on :8080
+    cmds:
+      - caddy file-server --root {{.DIST_DIR}} --listen :{{.PORT}}
+
+  clean:
+    desc: Remove generated output
+    cmds:
+      - rm -rf {{.DIST_DIR}}
