@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/images/favicon.png" alt="r-ryantm orbit icon" width="128" height="128" />
+</p>
+
 # 🪐 r-ryantm's package orbit 🪐
 
 [![Live](https://img.shields.io/badge/live-GitHub%20Pages-0ea5e9?style=for-the-badge&logo=github)](https://miniharinn.github.io/r-ryantm-orbit/)
