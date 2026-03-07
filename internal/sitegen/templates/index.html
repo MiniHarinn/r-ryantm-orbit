@@ -332,6 +332,7 @@
         filtered: [],
         activeStatuses: new Set(),
         chunks: [],
+        orderedChunks: [],
         nextChunkIndex: 0,
         loading: false,
         total: 0,
@@ -339,6 +340,9 @@
         prefixIndex: {},
         prefixData: {},
         loadedPrefixes: new Set(),
+        orderedPrefixes: [],
+        nextPrefixIndex: 0,
+        loadMode: "chunks",
         searchIndex: new Map(),
         lastRenderKeys: "",
         lastRenderList: [],
@@ -550,24 +554,94 @@
       }
 
       function sortEntries(entries, sortKey) {
-        const list = [...entries];
+        const parseDateValue = (value) => {
+          if (!value) return NaN;
+          const raw = String(value).trim();
+          let parsed = Date.parse(raw);
+          if (Number.isNaN(parsed)) {
+            let normalized = raw;
+            if (normalized.includes(" ") && !normalized.includes("T")) {
+              normalized = normalized.replace(" ", "T");
+            }
+            if (normalized.endsWith(" UTC")) {
+              normalized = normalized.replace(" UTC", "Z");
+            }
+            parsed = Date.parse(normalized);
+          }
+          return parsed;
+        };
+        const compareDateAsc = (aVal, bVal) => {
+          const aValid = Number.isFinite(aVal);
+          const bValid = Number.isFinite(bVal);
+          if (aValid && bValid) return aVal - bVal;
+          if (aValid) return -1;
+          if (bValid) return 1;
+          return 0;
+        };
+        const comparePackage = (aVal, bVal) => {
+          const aStr = String(aVal || "");
+          const bStr = String(bVal || "");
+          if (!aStr && !bStr) return 0;
+          if (!aStr) return 1;
+          if (!bStr) return -1;
+          return collator.compare(aStr, bStr);
+        };
+        const prepared = entries.map((entry, idx) => ({
+          entry,
+          idx,
+          packageKey: entry.package,
+          dateKey: parseDateValue(entry.date),
+        }));
+        const withTie = (result, a, b) => {
+          if (result !== 0) return result;
+          return a.idx - b.idx;
+        };
         switch (sortKey) {
           case "date_asc":
-            return list.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+            return prepared
+              .sort((a, b) => {
+                const primary = compareDateAsc(a.dateKey, b.dateKey);
+                const secondary = comparePackage(a.packageKey, b.packageKey);
+                return withTie(primary || secondary, a, b);
+              })
+              .map((item) => item.entry);
           case "date_desc":
-            return list.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+            return prepared
+              .sort((a, b) => {
+                const primary = compareDateAsc(b.dateKey, a.dateKey);
+                const secondary = comparePackage(a.packageKey, b.packageKey);
+                return withTie(primary || secondary, a, b);
+              })
+              .map((item) => item.entry);
           case "package_desc":
-            return list.sort((a, b) => collator.compare(String(b.package), String(a.package)));
+            return prepared
+              .sort((a, b) => {
+                const primary = comparePackage(b.packageKey, a.packageKey);
+                const secondary = compareDateAsc(b.dateKey, a.dateKey);
+                return withTie(primary || secondary, a, b);
+              })
+              .map((item) => item.entry);
           case "package_asc":
-            return list.sort((a, b) => collator.compare(String(a.package), String(b.package)));
+            return prepared
+              .sort((a, b) => {
+                const primary = comparePackage(a.packageKey, b.packageKey);
+                const secondary = compareDateAsc(b.dateKey, a.dateKey);
+                return withTie(primary || secondary, a, b);
+              })
+              .map((item) => item.entry);
           case "status":
-            return list.sort((a, b) => {
-              const statusCompare = collator.compare(normalizeStatus(a.status), normalizeStatus(b.status));
-              if (statusCompare !== 0) return statusCompare;
-              return String(b.date).localeCompare(String(a.date));
-            });
+            return prepared
+              .sort((a, b) => {
+                const statusCompare = collator.compare(
+                  normalizeStatus(a.entry.status),
+                  normalizeStatus(b.entry.status)
+                );
+                const dateCompare = compareDateAsc(b.dateKey, a.dateKey);
+                return withTie(statusCompare || dateCompare, a, b);
+              })
+              .map((item) => item.entry);
           default:
-            return list;
+            return prepared.map((item) => item.entry);
         }
       }
 
@@ -753,7 +827,11 @@
         state.loading = true;
         const response = await fetch(chunk.file, { cache: "no-store" });
         const payload = await response.json();
-        state.data = state.data.concat(payload.entries || []);
+        let entries = payload.entries || [];
+        if (state.loadMode === "chunks" && state.lastSort === "date_asc") {
+          entries = [...entries].reverse();
+        }
+        state.data = state.data.concat(entries);
         (payload.entries || []).forEach(ensureIndexed);
         state.renderLimit = Math.max(state.renderLimit + state.renderStep, state.data.length);
         state.loading = false;
@@ -763,10 +841,47 @@
 
       async function loadNextChunk() {
         if (state.loading) return;
-        if (state.nextChunkIndex >= state.chunks.length) return;
-        const chunk = state.chunks[state.nextChunkIndex];
+        if (state.nextChunkIndex >= state.orderedChunks.length) return;
+        const chunk = state.orderedChunks[state.nextChunkIndex];
         state.nextChunkIndex += 1;
         await loadChunk(chunk);
+      }
+
+      async function loadNextPrefixBatch() {
+        if (state.loading) return;
+        if (state.nextPrefixIndex >= state.orderedPrefixes.length) return;
+        const key = state.orderedPrefixes[state.nextPrefixIndex];
+        state.nextPrefixIndex += 1;
+        const info = state.prefixIndex[key];
+        if (!info) return;
+        state.loading = true;
+        const response = await fetch(info.file, { cache: "no-store" });
+        const payload = await response.json();
+        let entries = payload.entries || [];
+        entries = entries.sort((a, b) => {
+          const aPkg = String(a.package || "");
+          const bPkg = String(b.package || "");
+          const nameCompare = collator.compare(aPkg, bPkg);
+          if (nameCompare !== 0) return nameCompare;
+          return String(b.date || "").localeCompare(String(a.date || ""));
+        });
+        if (state.lastSort === "package_desc") {
+          entries.reverse();
+        }
+        state.data = state.data.concat(entries);
+        entries.forEach(ensureIndexed);
+        state.renderLimit = Math.max(state.renderLimit + state.renderStep, state.data.length);
+        state.loading = false;
+        filterAndRender();
+        autoFillViewport();
+      }
+
+      async function loadNextBatch() {
+        if (state.loadMode === "prefixes") {
+          await loadNextPrefixBatch();
+        } else {
+          await loadNextChunk();
+        }
       }
 
       function hasActiveFilters(query) {
@@ -786,7 +901,7 @@
         const icon = document.getElementById("loadMoreIcon");
         const text = document.getElementById("loadMoreText");
         if (!icon || !text) return;
-        const reachedEnd = state.nextChunkIndex >= state.chunks.length;
+        const reachedEnd = !hasMoreToLoad();
         if (reachedEnd) {
           icon.className = "ti ti-check text-base text-jade";
           text.textContent = "You're all caught up. That's everything.";
@@ -796,11 +911,48 @@
         }
       }
 
+      function hasMoreToLoad() {
+        if (state.loadMode === "prefixes") {
+          return state.nextPrefixIndex < state.orderedPrefixes.length;
+        }
+        return state.nextChunkIndex < state.orderedChunks.length;
+      }
+
+      async function resetLoadingForSort(initial = false) {
+        const sortKey = document.getElementById("sortSelect").value;
+        state.loadMode = sortKey.startsWith("package_") ? "prefixes" : "chunks";
+        state.lastSort = sortKey;
+        state.data = [];
+        state.filtered = [];
+        state.searchIndex.clear();
+        state.lastRenderKeys = "";
+        state.lastRenderList = [];
+        state.renderLimit = 200;
+        state.loading = false;
+        state.nextChunkIndex = 0;
+        state.nextPrefixIndex = 0;
+
+        if (state.loadMode === "chunks") {
+          state.orderedChunks = sortKey === "date_asc" ? [...state.chunks].reverse() : state.chunks;
+        } else {
+          state.orderedPrefixes = Object.keys(state.prefixIndex).sort();
+          if (sortKey === "package_desc") {
+            state.orderedPrefixes.reverse();
+          }
+        }
+
+        if (!initial) {
+          const cardsEl = document.getElementById("cards");
+          if (cardsEl) cardsEl.innerHTML = "";
+        }
+        await loadNextBatch();
+      }
+
       async function autoFillViewport() {
         if (state.loading) return;
         let safety = 0;
-        while (isLoadMoreVisible() && state.nextChunkIndex < state.chunks.length) {
-          await loadNextChunk();
+        while (isLoadMoreVisible() && hasMoreToLoad()) {
+          await loadNextBatch();
           safety += 1;
           if (safety >= 6) break;
         }
@@ -808,11 +960,11 @@
 
       async function loadUntilMatches(minIncrease = 1, maxChunks = 8) {
         if (state.loading) return;
-        if (state.nextChunkIndex >= state.chunks.length) return;
+        if (!hasMoreToLoad()) return;
         const startCount = state.filtered.length;
         let safety = 0;
-        while (state.filtered.length < startCount + minIncrease && state.nextChunkIndex < state.chunks.length) {
-          await loadNextChunk();
+        while (state.filtered.length < startCount + minIncrease && hasMoreToLoad()) {
+          await loadNextBatch();
           safety += 1;
           if (safety >= maxChunks) break;
         }
@@ -822,9 +974,11 @@
         const response = await fetch("index.json", { cache: "no-store" });
         const payload = await response.json();
         state.chunks = payload.chunks || [];
+        state.orderedChunks = state.chunks;
         state.total = payload.total || 0;
         state.statusTotals = payload.statuses || {};
         state.prefixIndex = payload.prefixes || {};
+        state.orderedPrefixes = Object.keys(state.prefixIndex).sort();
         renderStatusFilters();
         renderStats({
           total: state.total,
@@ -833,7 +987,7 @@
           "opted-out": state.statusTotals["opted-out"],
           "already-updated": state.statusTotals["already-updated"],
         });
-        await loadNextChunk();
+        await resetLoadingForSort(true);
       }
 
       function copyText(value) {
@@ -1078,7 +1232,9 @@
         searchTimer = setTimeout(filterAndRender, 180);
       });
       toggleClearSearch();
-      document.getElementById("sortSelect").addEventListener("change", filterAndRender);
+      document.getElementById("sortSelect").addEventListener("change", () => {
+        resetLoadingForSort();
+      });
 
       const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {

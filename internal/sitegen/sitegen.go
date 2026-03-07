@@ -409,11 +409,38 @@ func deriveError(lines []string) string {
 }
 
 func sortEntries(entries []LogEntry) {
-	sort.Slice(entries, func(i, j int) bool {
-		if entries[i].Date == entries[j].Date {
-			return entries[i].Package < entries[j].Package
+	parseDate := func(value string) time.Time {
+		value = strings.TrimSpace(value)
+		layouts := []string{
+			time.RFC3339,
+			"2006-01-02 15:04:05",
+			"2006-01-02 15:04",
+			"2006-01-02",
 		}
-		return entries[i].Date > entries[j].Date
+		for _, layout := range layouts {
+			if parsed, err := time.Parse(layout, value); err == nil {
+				return parsed
+			}
+		}
+		if parsed, err := time.Parse(time.RFC3339, strings.ReplaceAll(value, " ", "T")); err == nil {
+			return parsed
+		}
+		return time.Time{}
+	}
+
+	sort.SliceStable(entries, func(i, j int) bool {
+		dateI := parseDate(entries[i].Date)
+		dateJ := parseDate(entries[j].Date)
+		if !dateI.Equal(dateJ) {
+			if dateI.IsZero() {
+				return false
+			}
+			if dateJ.IsZero() {
+				return true
+			}
+			return dateI.After(dateJ)
+		}
+		return entries[i].Package < entries[j].Package
 	})
 }
 
