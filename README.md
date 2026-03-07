@@ -16,6 +16,11 @@ You can find the hosted version here: https://miniharinn.github.io/r-ryantm-orbi
 
 This repo ships a small Go pipeline that fetches logs, chunks them, and builds a static site.
 
+### Data source
+
+The data comes from the public logs at [nixpkgs-update-logs.nix-community.org](https://nixpkgs-update-logs.nix-community.org/).
+The program that produces those logs is [nix-community/nixpkgs-update](https://github.com/nix-community/nixpkgs-update).
+
 ### Tasks (recommended)
 
 - `task fetch`: download logs and generate `dist/index.json` + `dist/data/*`
