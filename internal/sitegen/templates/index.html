@@ -212,11 +212,6 @@
           </div>
         </div>
 
-        <div class="hidden text-xs uppercase tracking-[0.35em] text-slate-500 flex items-center gap-2" id="progressText">
-          <i class="ti ti-loader-2 text-base animate-spin text-slate-500"></i>
-          Loading entries…
-        </div>
-
         <div id="emptyState" class="hidden rounded-3xl border border-dashed border-slate-600/50 p-10 text-center text-slate-300 bg-night-900/60">
           <div class="flex flex-col items-center gap-3">
             <i class="ti ti-zoom-cancel text-2xl text-slate-400"></i>
@@ -593,19 +588,6 @@
         cards.appendChild(fragment);
       }
 
-      function updateProgress() {
-        const progressText = document.getElementById("progressText");
-        const loadMore = document.getElementById("loadMore");
-        if (state.total === 0) {
-          progressText.textContent = "No entries yet.";
-          return;
-        }
-        progressText.textContent = `Loaded ${state.data.length} of ${state.total} entries`;
-        if (state.data.length >= state.total) {
-          loadMore.classList.add("hidden");
-        }
-      }
-
       async function loadPrefix(key) {
         if (!key) return;
         if (state.loadedPrefixes.has(key)) return;
@@ -622,14 +604,12 @@
       async function loadChunk(chunk) {
         if (!chunk) return;
         state.loading = true;
-        updateProgress();
         const response = await fetch(chunk.file, { cache: "no-store" });
         const payload = await response.json();
         state.data = state.data.concat(payload.entries || []);
         (payload.entries || []).forEach(ensureIndexed);
         state.loading = false;
         filterAndRender();
-        updateProgress();
         autoFillViewport();
       }
 
@@ -690,7 +670,6 @@
           "opted-out": state.statusTotals["opted-out"],
           "already-updated": state.statusTotals["already-updated"],
         });
-        updateProgress();
         await loadNextChunk();
       }
 
