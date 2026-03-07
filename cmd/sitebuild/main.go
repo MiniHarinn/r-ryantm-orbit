@@ -94,7 +94,7 @@ func fetchRepoStars(client *http.Client, repo string) (int, error) {
 }
 
 func formatStars(value int) string {
-	if value <= 0 {
+	if value < 0 {
 		return "--"
 	}
 	return fmt.Sprintf("%d", value)

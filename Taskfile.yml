@@ -15,7 +15,7 @@ tasks:
   build:
     desc: Build site from existing index.json
     cmds:
-      - nix develop --command go run ./cmd/sitebuild -out {{.DIST_DIR}} -data {{.DIST_DIR}}/index.json
+      - nix develop --command go run ./cmd/sitebuild -out {{.DIST_DIR}} -data {{.DIST_DIR}}/index.json -verbose
 
   all:
     desc: Fetch data then build site
