@@ -28,6 +28,12 @@ tasks:
       - task: fetch
       - task: build
 
+  all-rapid:
+    desc: Fetch data then build site (Rapid)
+    cmds:
+      - task: fetch-rapid
+      - task: build
+
   serve:
     desc: Serve dist/ via Caddy on :8080
     cmds:
