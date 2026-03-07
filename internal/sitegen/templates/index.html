@@ -423,8 +423,12 @@
             const offset = -Number(ch) * 1.2;
             if (animate) {
               track.style.transform = "translateY(0)";
+              // Ensure the initial state is painted before animating.
               requestAnimationFrame(() => {
-                track.style.transform = `translateY(${offset}em)`;
+                track.getBoundingClientRect();
+                requestAnimationFrame(() => {
+                  track.style.transform = `translateY(${offset}em)`;
+                });
               });
             } else {
               track.style.transform = `translateY(${offset}em)`;
