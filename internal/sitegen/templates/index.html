@@ -271,8 +271,8 @@
         <div id="cards" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
 
         <div id="loadMore" class="mt-2 rounded-2xl border border-slate-600/40 bg-night-800/60 px-4 py-3 text-xs text-slate-400 flex items-center gap-2">
-          <i class="ti ti-infinity text-base text-slate-500"></i>
-          <span>Auto-loading more as you scroll.</span>
+          <i id="loadMoreIcon" class="ti ti-infinity text-base text-slate-500"></i>
+          <span id="loadMoreText">Auto-loading more as you scroll.</span>
         </div>
       </section>
     </main>
@@ -642,6 +642,7 @@
           loadUntilMatches(1, 8);
         }
         updateObserver();
+        updateLoadMoreMessage();
       }
 
       function escapeHtml(value) {
@@ -777,6 +778,22 @@
         if (!loadMore) return false;
         const rect = loadMore.getBoundingClientRect();
         return rect.top <= window.innerHeight + 200;
+      }
+
+      function updateLoadMoreMessage() {
+        const loadMore = document.getElementById("loadMore");
+        if (!loadMore) return;
+        const icon = document.getElementById("loadMoreIcon");
+        const text = document.getElementById("loadMoreText");
+        if (!icon || !text) return;
+        const reachedEnd = state.nextChunkIndex >= state.chunks.length;
+        if (reachedEnd) {
+          icon.className = "ti ti-check text-base text-jade";
+          text.textContent = "You're all caught up. That's everything.";
+        } else {
+          icon.className = "ti ti-infinity text-base text-slate-500";
+          text.textContent = "Auto-loading more as you scroll.";
+        }
       }
 
       async function autoFillViewport() {
