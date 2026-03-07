@@ -25,6 +25,7 @@ var templateFS embed.FS
 
 var (
 	updateInfoRegex = regexp.MustCompile(`(?i)([\w.+-]+)\s+([^\s]+)\s+->\s+([^\s]+)\s+(https?://[^\s]+)`) // pkg old -> new url
+	urlRegex        = regexp.MustCompile(`https?://[^\s"'<>]+`)
 )
 
 type LogTask struct {
@@ -317,7 +318,7 @@ func fetchLogs(client *http.Client, opts Options, tasks []LogTask) []LogEntry {
 		go func() {
 			defer wg.Done()
 			for task := range jobs {
-				entry := LogEntry{Package: task.Package, Date: task.Date, LogURL: task.URL}
+				entry := LogEntry{Package: task.Package, Date: task.Date, LogURL: sanitizeURL(task.URL)}
 				logf(opts, "fetching log %s", task.URL)
 				body, err := fetch(client, opts, task.URL)
 				if err != nil {
@@ -364,9 +365,20 @@ func parseLog(body []byte, entry *LogEntry) {
 	if match := updateInfoRegex.FindStringSubmatch(text); len(match) == 5 {
 		entry.OldVersion = match[2]
 		entry.NewVersion = match[3]
-		entry.UpstreamURL = match[4]
+		entry.UpstreamURL = sanitizeURL(match[4])
 	}
 
+}
+
+func sanitizeURL(value string) string {
+	cleaned := strings.TrimSpace(value)
+	if cleaned == "" {
+		return ""
+	}
+	if match := urlRegex.FindString(cleaned); match != "" {
+		return match
+	}
+	return ""
 }
 
 func deriveStatus(text string) string {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>r-ryantm's package orbit</title>
     <meta name="description" content="r-ryantm's package orbit for nixpkgs-update logs." />
-    <link rel="icon" href="assets/saturn.png" type="image/png" />
+    <link rel="icon" href="assets/favicon.png" type="image/png" />
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
@@ -700,6 +700,46 @@
         }).catch(() => {
           // Silent fallback if clipboard is blocked.
         });
+      });
+
+      function openLogModal(url, title) {
+        if (!logModal || !logFrame) return;
+        if (logTitle) {
+          logTitle.textContent = title || "Log";
+        }
+        logFrame.src = url;
+        logModal.classList.remove("hidden");
+        logModal.classList.add("flex");
+        document.body.classList.add("overflow-hidden");
+      }
+
+      function closeLogModal() {
+        if (!logModal || !logFrame) return;
+        logModal.classList.add("hidden");
+        logModal.classList.remove("flex");
+        logFrame.src = "about:blank";
+        document.body.classList.remove("overflow-hidden");
+      }
+
+      cards.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-log-url]");
+        if (!button) return;
+        const url = button.getAttribute("data-log-url");
+        if (!url) return;
+        const title = button.getAttribute("data-log-title");
+        openLogModal(url, title);
+      });
+
+      if (logBackdrop) {
+        logBackdrop.addEventListener("click", closeLogModal);
+      }
+      if (logClose) {
+        logClose.addEventListener("click", closeLogModal);
+      }
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeLogModal();
+        }
       });
 
       const clearSearch = document.getElementById("clearSearch");
