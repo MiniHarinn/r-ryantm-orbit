@@ -727,7 +727,7 @@
             ${errorLine}
             <div class=\"mt-auto flex flex-wrap gap-2 text-xs\">
               ${safeLogUrl ? `<button type=\"button\" class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" data-log-url=\"${safeLogUrl}\" data-log-title=\"${safePackage}\"><i class=\"ti ti-notes text-base\"></i>View log</button>` : ""}
-              ${entry.package ? `<a class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" href=\"${nixosSearchUrl}\" target=\"_blank\" rel=\"noopener\"><i class=\"ti ti-search text-base\"></i>NixOS Search</a>` : ""}
+              ${entry.package ? `<a class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" href=\"${nixosSearchUrl}\" target=\"_blank\" rel=\"noopener\"><span class=\"h-4 w-4 bg-slate-200\" style=\"-webkit-mask: url(assets/nixos-svgrepo-com.svg) center / contain no-repeat; mask: url(assets/nixos-svgrepo-com.svg) center / contain no-repeat;\"></span>Nix Search</a>` : ""}
             </div>
           `;
           fragment.appendChild(card);
