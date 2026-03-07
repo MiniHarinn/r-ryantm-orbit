@@ -96,6 +96,32 @@
         content-visibility: auto;
         contain-intrinsic-size: 380px;
       }
+      .odometer {
+        display: inline-flex;
+        align-items: flex-end;
+        gap: 2px;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+      }
+      .odometer-digit {
+        position: relative;
+        width: 0.7em;
+        height: 1.2em;
+        overflow: hidden;
+      }
+      .odometer-track {
+        position: absolute;
+        left: 0;
+        top: 0;
+        display: flex;
+        flex-direction: column;
+        transition: transform 1400ms cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .odometer-digit span {
+        height: 1.2em;
+        line-height: 1.2em;
+        display: block;
+      }
       #logModal.is-open .modal-backdrop {
         animation: backdrop-in 180ms ease-out forwards;
       }
@@ -297,9 +323,12 @@
         renderStep: 200,
         lastQuery: "",
         lastSort: "date_desc",
+        statsAnimated: false,
+        lastStats: null,
       };
 
       const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+      const numberFormat = new Intl.NumberFormat();
 
       function normalizeStatus(status) {
         if (status === "success" || status === "already-updated") {
@@ -361,7 +390,7 @@
         return "other";
       }
 
-      function createStatCard(label, value, accent, icon) {
+      function createStatCard(label, accent, icon, key) {
         const card = document.createElement("div");
         card.className = "rounded-2xl border border-slate-600/40 bg-night-900/60 p-4 shadow-glow min-h-[104px] flex flex-col justify-between";
         card.innerHTML = `
@@ -369,19 +398,75 @@
             <i class="${icon} text-base text-slate-500"></i>
             ${label}
           </div>
-          <div class="mt-2 text-2xl font-semibold ${accent}">${value}</div>
+          <div class="mt-2 text-2xl font-semibold ${accent}" data-stat="${key}"></div>
         `;
         return card;
       }
 
+      function buildOdometer(value, animate) {
+        const formatted = numberFormat.format(value);
+        const wrapper = document.createElement("span");
+        wrapper.className = "odometer";
+        for (const ch of formatted) {
+          if (ch >= "0" && ch <= "9") {
+            const digit = document.createElement("span");
+            digit.className = "odometer-digit";
+            const track = document.createElement("span");
+            track.className = "odometer-track";
+            for (let i = 0; i <= 9; i += 1) {
+              const n = document.createElement("span");
+              n.textContent = String(i);
+              track.appendChild(n);
+            }
+            digit.appendChild(track);
+            wrapper.appendChild(digit);
+            const offset = -Number(ch) * 1.2;
+            if (animate) {
+              track.style.transform = "translateY(0)";
+              requestAnimationFrame(() => {
+                track.style.transform = `translateY(${offset}em)`;
+              });
+            } else {
+              track.style.transform = `translateY(${offset}em)`;
+            }
+          } else {
+            const sep = document.createElement("span");
+            sep.textContent = ch;
+            wrapper.appendChild(sep);
+          }
+        }
+        return wrapper;
+      }
+
       function renderStats(stats) {
         const statsEl = document.getElementById("stats");
-        statsEl.innerHTML = "";
         const completed = (stats.success || 0) + (stats["already-updated"] || 0);
-        statsEl.appendChild(createStatCard("Total", stats.total || 0, "text-slate-100", "ti ti-stack-2"));
-        statsEl.appendChild(createStatCard("Completed", completed, "text-jade", "ti ti-check"));
-        statsEl.appendChild(createStatCard("Failed", stats.failed || 0, "text-ember", "ti ti-alert-triangle"));
-        statsEl.appendChild(createStatCard("Opted out", stats["opted-out"] || 0, "text-gold", "ti ti-hand-stop"));
+        const values = {
+          total: stats.total || 0,
+          completed,
+          failed: stats.failed || 0,
+          optedOut: stats["opted-out"] || 0,
+        };
+        if (state.statsAnimated && state.lastStats
+          && state.lastStats.total === values.total
+          && state.lastStats.completed === values.completed
+          && state.lastStats.failed === values.failed
+          && state.lastStats.optedOut === values.optedOut) {
+          return;
+        }
+        statsEl.innerHTML = "";
+        statsEl.appendChild(createStatCard("Total", "text-slate-100", "ti ti-stack-2", "total"));
+        statsEl.appendChild(createStatCard("Completed", "text-jade", "ti ti-check", "completed"));
+        statsEl.appendChild(createStatCard("Failed", "text-ember", "ti ti-alert-triangle", "failed"));
+        statsEl.appendChild(createStatCard("Opted out", "text-gold", "ti ti-hand-stop", "optedOut"));
+        Object.entries(values).forEach(([key, value]) => {
+          const el = statsEl.querySelector(`[data-stat="${key}"]`);
+          if (!el) return;
+          el.innerHTML = "";
+          el.appendChild(buildOdometer(value, !state.statsAnimated));
+        });
+        state.statsAnimated = true;
+        state.lastStats = values;
       }
 
       function renderStatusFilters() {
@@ -478,13 +563,6 @@
 
       function filterAndRender() {
         applyFilters();
-        renderStats({
-          total: state.total,
-          success: state.statusTotals.success,
-          failed: state.statusTotals.failed,
-          "opted-out": state.statusTotals["opted-out"],
-          "already-updated": state.statusTotals["already-updated"],
-        });
         const visible = state.filtered.slice(0, state.renderLimit);
         const visibleList = visible.map(entryKey);
         const visibleKeys = visibleList.join("|");
