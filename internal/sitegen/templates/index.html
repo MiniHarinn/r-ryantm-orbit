@@ -221,12 +221,9 @@
 
         <div id="cards" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
 
-        <div id="loadMore" class="mt-2 rounded-2xl border border-slate-600/40 bg-night-800/60 px-4 py-3 text-sm text-slate-300 flex items-center justify-between">
-          <span class="flex items-center gap-2"><i class="ti ti-infinity text-base text-slate-400"></i>Need more entries?</span>
-          <button id="loadButton" class="px-3 py-2 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2">
-            <i class="ti ti-arrow-down text-base"></i>
-            Load more
-          </button>
+        <div id="loadMore" class="mt-2 rounded-2xl border border-slate-600/40 bg-night-800/60 px-4 py-3 text-xs text-slate-400 flex items-center gap-2">
+          <i class="ti ti-infinity text-base text-slate-500"></i>
+          <span>Auto-loading more as you scroll.</span>
         </div>
       </section>
     </main>
@@ -295,6 +292,7 @@
         loadedPrefixes: new Set(),
         searchIndex: new Map(),
         lastRenderKeys: "",
+        lastRenderList: [],
         renderLimit: 200,
         renderStep: 200,
         lastQuery: "",
@@ -488,10 +486,21 @@
           "already-updated": state.statusTotals["already-updated"],
         });
         const visible = state.filtered.slice(0, state.renderLimit);
-        const visibleKeys = visible.map(entryKey).join("|");
+        const visibleList = visible.map(entryKey);
+        const visibleKeys = visibleList.join("|");
         if (visibleKeys !== state.lastRenderKeys) {
-          renderCards(visible);
+          const prevList = state.lastRenderList;
+          const canAppend = prevList.length > 0
+            && visibleList.length > prevList.length
+            && prevList.every((key, idx) => visibleList[idx] === key);
+          if (canAppend) {
+            const newEntries = visible.slice(prevList.length);
+            renderCards(newEntries, { append: true });
+          } else {
+            renderCards(visible);
+          }
           state.lastRenderKeys = visibleKeys;
+          state.lastRenderList = visibleList;
         }
         if (!state.lastQuery && state.filtered.length === 0 && state.nextChunkIndex < state.chunks.length) {
           loadUntilMatches(1, 8);
@@ -524,9 +533,11 @@
         return "";
       }
 
-      function renderCards(entries) {
+      function renderCards(entries, { append = false } = {}) {
         const cards = document.getElementById("cards");
-        cards.innerHTML = "";
+        if (!append) {
+          cards.innerHTML = "";
+        }
         const emptyState = document.getElementById("emptyState");
         if (entries.length === 0) {
           emptyState.classList.remove("hidden");
@@ -608,6 +619,7 @@
         const payload = await response.json();
         state.data = state.data.concat(payload.entries || []);
         (payload.entries || []).forEach(ensureIndexed);
+        state.renderLimit = Math.max(state.renderLimit + state.renderStep, state.data.length);
         state.loading = false;
         filterAndRender();
         autoFillViewport();
@@ -633,13 +645,12 @@
       }
 
       async function autoFillViewport() {
-        if (!hasActiveFilters(state.lastQuery)) return;
         if (state.loading) return;
         let safety = 0;
         while (isLoadMoreVisible() && state.nextChunkIndex < state.chunks.length) {
           await loadNextChunk();
           safety += 1;
-          if (safety >= 4) break;
+          if (safety >= 6) break;
         }
       }
 
@@ -917,20 +928,6 @@
       toggleClearSearch();
       document.getElementById("sortSelect").addEventListener("change", filterAndRender);
 
-      const loadButton = document.getElementById("loadButton");
-      loadButton.addEventListener("click", () => {
-        const query = normalizeQuery(document.getElementById("searchInput").value);
-        if (query) {
-          state.renderLimit += state.renderStep;
-          filterAndRender();
-        }
-        if (hasActiveFilters(query)) {
-          loadUntilMatches(10, 8);
-          return;
-        }
-        loadUntilMatches(1, 8);
-      });
-
       const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
@@ -941,11 +938,8 @@
 
       function updateObserver() {
         const loadMore = document.getElementById("loadMore");
-        if (hasActiveFilters(state.lastQuery)) {
-          observer.unobserve(loadMore);
-        } else {
-          observer.observe(loadMore);
-        }
+        if (!loadMore) return;
+        observer.observe(loadMore);
       }
 
       updateObserver();
