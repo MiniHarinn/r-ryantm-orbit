@@ -578,7 +578,7 @@
               <div class=\"mt-1 text-sm font-semibold text-slate-100\">${versionLine}</div>
             </div>
             ${errorLine}
-            <div class=\"flex flex-wrap gap-2 text-xs\">
+            <div class=\"mt-auto flex flex-wrap gap-2 text-xs\">
               ${safeLogUrl ? `<button type=\"button\" class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" data-log-url=\"${safeLogUrl}\" data-log-title=\"${safePackage}\"><i class=\"ti ti-notes text-base\"></i>View log</button>` : ""}
               ${safeLogUrl ? `<a class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" href=\"${safeLogUrl}\" target=\"_blank\" rel=\"noopener\"><i class=\"ti ti-external-link text-base\"></i>Open log</a>` : ""}
               ${safeUpstreamUrl ? `<a class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" href=\"${safeUpstreamUrl}\" target=\"_blank\" rel=\"noopener\"><i class=\"ti ti-external-link text-base\"></i>Upstream</a>` : ""}
