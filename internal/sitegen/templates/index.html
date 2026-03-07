@@ -158,26 +158,37 @@
           animation: none;
         }
       }
+      @media (max-width: 640px) {
+        #filterPanel.is-collapsed {
+          max-height: 76px;
+        }
+        #filterPanel.is-collapsed .filter-body {
+          max-height: 0;
+          opacity: 0;
+          margin-top: 0;
+          pointer-events: none;
+        }
+      }
     </style>
   </head>
-  <body class="font-display text-slate-100 min-h-screen">
+  <body class="font-display text-slate-100 min-h-screen overflow-x-hidden">
     <div class="mesh"></div>
     <div class="noise"></div>
 
-    <main class="relative max-w-7xl mx-auto px-6 py-10">
+    <main class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
       <header class="grid gap-8 lg:grid-cols-[1fr_1.2fr] items-start">
         <div class="space-y-7">
           <div class="inline-flex items-center gap-3 text-xs uppercase tracking-[0.35em] text-pulse-200/80">
             <span class="h-px w-10 bg-pulse-400/80"></span>
             Made with love by Harinn <3
           </div>
-          <h1 class="text-4xl md:text-6xl font-semibold leading-tight">
+          <h1 class="text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight">
             r-ryantm's package orbit.
           </h1>
           <p class="text-slate-300 max-w-2xl text-lg">
             Track nixpkgs-update runs in one place. (Vibecoded ✌️)
           </p>
-          <div class="flex flex-wrap gap-3 text-xs text-slate-300">
+          <div class="flex flex-col items-start gap-3 text-xs text-slate-300 sm:flex-row sm:flex-wrap">
             <a class="px-3 py-2 rounded-full border border-slate-600/40 bg-night-900/70 shadow-pill hover:bg-night-800/70 transition inline-flex items-center gap-2" href="https://github.com/NixOS/nixpkgs" target="_blank" rel="noopener">
               <i class="ti ti-brand-github text-base text-slate-300"></i>
               <span class="text-slate-400">GitHub</span>
@@ -192,7 +203,7 @@
             </a>
           </div>
         </div>
-        <div class="rounded-[32px] border border-slate-600/40 bg-night-800/70 p-6 shadow-panel">
+        <div class="rounded-[32px] border border-slate-600/40 bg-night-800/70 p-4 sm:p-6 shadow-panel">
           <div class="flex flex-col gap-2">
             <div class="text-xs uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2">
               <i class="ti ti-activity text-base text-slate-500"></i>
@@ -207,10 +218,21 @@
         </div>
       </header>
 
-      <section class="mt-12 grid gap-6">
+      <section class="mt-10 sm:mt-12 grid gap-6">
         <div class="sticky top-4 z-20">
-          <div class="rounded-[28px] border border-slate-600/40 bg-night-800/80 p-5 shadow-glow backdrop-blur">
-          <div class="grid gap-4 md:gap-6 md:grid-cols-[2fr_1.6fr_0.9fr] items-end">
+          <div id="filterPanel" class="rounded-[28px] border border-slate-600/40 bg-night-800/80 p-4 sm:p-5 shadow-glow backdrop-blur transition-all duration-300 ease-out max-h-[520px]">
+          <div class="flex items-center justify-between gap-3">
+            <div class="text-xs uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2">
+              <i class="ti ti-adjustments text-base text-slate-500"></i>
+              Filters
+            </div>
+            <button id="filterToggle" type="button" class="sm:hidden inline-flex items-center gap-2 rounded-full border border-slate-600/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-slate-100 hover:bg-night-800/70 transition">
+              <span id="filterToggleLabel">Collapse</span>
+              <i id="filterToggleIcon" class="ti ti-chevron-up text-base"></i>
+            </button>
+          </div>
+          <div class="filter-body mt-3 transition-all duration-200 ease-out max-h-[420px]">
+          <div class="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-[2fr_1.6fr_0.9fr] items-end">
             <div>
               <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-search text-base text-slate-500"></i>Search</label>
               <div class="mt-2 relative">
@@ -220,13 +242,13 @@
                 </button>
               </div>
             </div>
-            <div>
+            <div class="sm:col-span-2 lg:col-span-1">
               <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-filter text-base text-slate-500"></i>Status</label>
-              <div class="mt-2 flex flex-nowrap gap-2 overflow-x-auto pb-1" id="statusFilters"></div>
+              <div class="mt-2 -mx-1 flex flex-wrap gap-2 pb-1 px-1 sm:flex-nowrap sm:overflow-x-auto" id="statusFilters"></div>
             </div>
-            <div class="md:justify-self-end">
+            <div class="sm:justify-self-end">
               <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-sort-ascending-2 text-base text-slate-500"></i>Sort</label>
-              <select id="sortSelect" class="mt-2 w-full md:max-w-[220px] rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 text-sm">
+              <select id="sortSelect" class="mt-2 w-full sm:max-w-[220px] rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 text-sm">
                 <option value="date_desc">Newest first</option>
                 <option value="date_asc">Oldest first</option>
                 <option value="package_asc">Package A-Z</option>
@@ -234,6 +256,7 @@
                 <option value="status">Status</option>
               </select>
             </div>
+          </div>
           </div>
           </div>
         </div>
@@ -268,7 +291,7 @@
 
     <div id="logModal" class="fixed inset-0 z-50 hidden items-center justify-center">
       <div id="logBackdrop" class="modal-backdrop absolute inset-0 bg-night-950/70 backdrop-blur-sm"></div>
-      <div class="modal-panel relative z-10 w-[min(1280px,96vw)] rounded-[28px] border border-slate-600/40 bg-night-900/95 shadow-panel flex flex-col overflow-hidden" style="height: 92vh; max-height: 96vh; min-height: 70vh;">
+      <div class="modal-panel relative z-10 w-[min(1280px,94vw)] sm:w-[min(1280px,96vw)] h-[85vh] sm:h-[92vh] max-h-[90vh] sm:max-h-[96vh] min-h-[60vh] sm:min-h-[70vh] rounded-[28px] border border-slate-600/40 bg-night-900/95 shadow-panel flex flex-col overflow-hidden">
         <div class="flex items-center justify-between gap-3 border-b border-slate-700/40 px-5 py-4">
           <div class="min-w-0">
             <div class="text-[10px] uppercase tracking-[0.3em] text-slate-500">Log viewer</div>
@@ -329,6 +352,37 @@
 
       const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
       const numberFormat = new Intl.NumberFormat();
+      const filterPanel = document.getElementById("filterPanel");
+      const filterToggle = document.getElementById("filterToggle");
+      const filterToggleLabel = document.getElementById("filterToggleLabel");
+      const filterToggleIcon = document.getElementById("filterToggleIcon");
+
+      function setFilterCollapsed(next) {
+        if (!filterPanel) return;
+        filterPanel.classList.toggle("is-collapsed", next);
+        if (filterToggleLabel) {
+          filterToggleLabel.textContent = next ? "Expand" : "Collapse";
+        }
+        if (filterToggleIcon) {
+          filterToggleIcon.className = next ? "ti ti-chevron-down text-base" : "ti ti-chevron-up text-base";
+        }
+      }
+
+      if (filterToggle) {
+        filterToggle.addEventListener("click", () => {
+          const next = !filterPanel.classList.contains("is-collapsed");
+          setFilterCollapsed(next);
+        });
+      }
+
+      function initMobileCollapse() {
+        if (!filterPanel) return;
+        const isMobile = window.matchMedia("(max-width: 640px)").matches;
+        setFilterCollapsed(isMobile);
+      }
+
+      window.addEventListener("resize", initMobileCollapse);
+      initMobileCollapse();
 
       function normalizeStatus(status) {
         if (status === "success" || status === "already-updated") {
@@ -640,25 +694,25 @@
           const nixosSearchUrl = `https://search.nixos.org/packages?channel=unstable&query=${encodeURIComponent(String(entry.package || ""))}`;
 
           const card = document.createElement("article");
-          card.className = `rounded-3xl border border-slate-600/40 ${meta.borderClass} border-l-4 bg-night-800/70 p-4 shadow-glow flex flex-col gap-3 opacity-0`;
+          card.className = `rounded-3xl border border-slate-600/40 ${meta.borderClass} border-l-4 bg-night-800/70 p-4 shadow-glow flex flex-col gap-3 opacity-0 min-w-0`;
           card.classList.add("card");
           card.style.animationDelay = `${Math.min(index * 30, 300)}ms`;
           card.classList.add("animate-rise");
 
           const versionLine = entry.old_version && entry.new_version
-            ? `<span class=\"text-slate-300 flex items-center gap-2\"><i class=\"ti ti-arrow-right text-base text-slate-500\"></i>${safeOld} -> ${safeNew}</span>`
+            ? `<span class=\"text-slate-300 flex flex-wrap items-start gap-2 break-all\"><i class=\"ti ti-arrow-right text-base text-slate-500\"></i><span class=\"break-all\">${safeOld} -> ${safeNew}</span></span>`
             : `<span class=\"text-slate-500 flex items-center gap-2\"><i class=\"ti ti-minus text-base text-slate-500\"></i>Version info unavailable</span>`;
 
           const errorLine = entry.error
-            ? `<div class=\"text-xs text-ember/90 bg-ember/10 border border-ember/30 rounded-2xl px-3 py-2\">${safeError}</div>`
+            ? `<div class=\"text-xs text-ember/90 bg-ember/10 border border-ember/30 rounded-2xl px-3 py-2 break-all\">${safeError}</div>`
             : "";
 
           card.innerHTML = `
             <div class=\"flex items-start justify-between gap-3 flex-wrap\">
               <div class=\"min-w-0 flex-1\">
                 <h3 class=\"text-base font-semibold\">
-                  <button type=\"button\" class=\"text-left inline-flex items-center hover:text-slate-100 transition\" data-copy-package=\"${safePackage}\" aria-label=\"Copy package name\">
-                    <span class=\"break-words\">${safePackage}</span>
+                  <button type=\"button\" class=\"text-left inline-flex min-w-0 items-center hover:text-slate-100 transition\" data-copy-package=\"${safePackage}\" aria-label=\"Copy package name\">
+                    <span class=\"break-all\">${safePackage}</span>
                   </button>
                 </h3>
                 <div class=\"text-xs text-slate-400 font-mono\">${safeDate}</div>
