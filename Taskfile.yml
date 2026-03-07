@@ -12,6 +12,11 @@ tasks:
     cmds:
       - nix develop --command go run ./cmd/fetchdata -out {{.DIST_DIR}} -workers 64 -index-workers 64 -verbose
 
+  fetch-rapid:
+    desc: Fetch and parse logs into data.json (Rapid)
+    cmds:
+      - nix develop --command go run ./cmd/fetchdata -out {{.DIST_DIR}} -workers 256 -index-workers 256 -verbose
+
   build:
     desc: Build site from existing index.json
     cmds:
