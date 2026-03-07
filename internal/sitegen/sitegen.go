@@ -25,7 +25,7 @@ import (
 var templateFS embed.FS
 
 var (
-	updateInfoRegex = regexp.MustCompile(`(?i)([\w.+-]+)\s+([^\s]+)\s+->\s+([^\s]+)\s+(https?://[^\s]+)`) // pkg old -> new url
+	updateInfoRegex = regexp.MustCompile(`(?i)([\w.+-]+)\s+([^\s]+)\s+->\s+([^\s]+)(?:\s+https?://[^\s]+)?`) // pkg old -> new (optional url)
 	urlRegex        = regexp.MustCompile(`https?://[^\s"'<>]+`)
 )
 
@@ -42,7 +42,6 @@ type LogEntry struct {
 	Status      string `json:"status"`
 	OldVersion  string `json:"old_version,omitempty"`
 	NewVersion  string `json:"new_version,omitempty"`
-	UpstreamURL string `json:"upstream_url,omitempty"`
 	Error       string `json:"error,omitempty"`
 }
 
@@ -335,10 +334,9 @@ func parseLog(body []byte, entry *LogEntry) {
 		entry.Error = deriveError(lines)
 	}
 
-	if match := updateInfoRegex.FindStringSubmatch(text); len(match) == 5 {
+	if match := updateInfoRegex.FindStringSubmatch(text); len(match) == 4 {
 		entry.OldVersion = match[2]
 		entry.NewVersion = match[3]
-		entry.UpstreamURL = sanitizeURL(match[4])
 	}
 
 }

@@ -188,7 +188,7 @@
             <div>
               <label class="text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><i class="ti ti-search text-base text-slate-500"></i>Search</label>
               <div class="mt-2 relative">
-                <input id="searchInput" class="w-full rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-pulse-400/60" placeholder="Package, upstream URL" />
+                <input id="searchInput" class="w-full rounded-2xl bg-night-900/70 border border-slate-600/40 px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-pulse-400/60" placeholder="Package name" />
                 <button id="clearSearch" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-slate-600/40 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400 hover:text-slate-100 hover:bg-night-800/60 transition hidden" aria-label="Clear search">
                   Clear
                 </button>
@@ -254,21 +254,26 @@
         <div class="flex items-center justify-between gap-3 border-b border-slate-700/40 px-5 py-4">
           <div class="min-w-0">
             <div class="text-[10px] uppercase tracking-[0.3em] text-slate-500">Log viewer</div>
-            <div id="logTitle" class="text-sm text-slate-100 truncate">Log</div>
+            <div id="logTitle" class="text-lg text-slate-100 truncate">Log</div>
             <div id="logStatus" class="mt-1 text-[10px] uppercase tracking-[0.24em] text-slate-500">Idle</div>
           </div>
           <div class="flex items-center gap-2">
-            <a id="logOpenExternal" class="rounded-full border border-slate-600/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-slate-100 hover:bg-night-800/70 transition" href="#" target="_blank" rel="noopener">Open</a>
-            <button id="logCancel" type="button" class="hidden rounded-full border border-slate-600/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-slate-100 hover:bg-night-800/70 transition">
+            <a id="logOpenExternal" class="rounded-full border border-slate-600/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-slate-100 hover:bg-night-800/70 transition inline-flex items-center gap-2" href="#" target="_blank" rel="noopener">
+              <i class="ti ti-external-link text-base"></i>
+              Open
+            </a>
+            <button id="logCancel" type="button" class="hidden rounded-full border border-slate-600/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-slate-100 hover:bg-night-800/70 transition inline-flex items-center gap-2">
+              <i class="ti ti-player-stop text-base"></i>
               Stop
             </button>
-            <button id="logClose" type="button" class="rounded-full border border-slate-600/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-slate-100 hover:bg-night-800/70 transition">
+            <button id="logClose" type="button" class="rounded-full border border-slate-600/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-slate-100 hover:bg-night-800/70 transition inline-flex items-center gap-2">
+              <i class="ti ti-x text-base"></i>
               Close
             </button>
           </div>
         </div>
         <div class="flex-1 bg-night-950/80 overflow-auto">
-          <pre id="logContent" class="min-h-full p-5 font-mono text-[11px] leading-relaxed text-slate-200 whitespace-pre-wrap break-words"></pre>
+          <pre id="logContent" class="min-h-full p-5 font-mono text-[12px] leading-relaxed text-slate-200 whitespace-pre-wrap break-words"></pre>
         </div>
       </div>
     </div>
@@ -329,7 +334,7 @@
 
       function buildSearchIndex(entry) {
         const safe = (val) => String(val || "");
-        const haystack = `${safe(entry.package)} ${safe(entry.upstream_url)} ${safe(entry.old_version)} ${safe(entry.new_version)}`.toLowerCase();
+        const haystack = `${safe(entry.package)} ${safe(entry.old_version)} ${safe(entry.new_version)}`.toLowerCase();
         return haystack;
       }
 
@@ -544,7 +549,7 @@
           const safeNew = escapeHtml(entry.new_version);
           const safeError = escapeHtml(entry.error || "");
           const safeLogUrl = safeUrl(entry.log_url);
-          const safeUpstreamUrl = safeUrl(entry.upstream_url);
+          const nixosSearchUrl = `https://search.nixos.org/packages?channel=unstable&query=${encodeURIComponent(String(entry.package || ""))}`;
 
           const card = document.createElement("article");
           card.className = `rounded-3xl border border-slate-600/40 ${meta.borderClass} border-l-4 bg-night-800/70 p-4 shadow-glow flex flex-col gap-3 opacity-0`;
@@ -580,8 +585,7 @@
             ${errorLine}
             <div class=\"mt-auto flex flex-wrap gap-2 text-xs\">
               ${safeLogUrl ? `<button type=\"button\" class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" data-log-url=\"${safeLogUrl}\" data-log-title=\"${safePackage}\"><i class=\"ti ti-notes text-base\"></i>View log</button>` : ""}
-              ${safeLogUrl ? `<a class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" href=\"${safeLogUrl}\" target=\"_blank\" rel=\"noopener\"><i class=\"ti ti-external-link text-base\"></i>Open log</a>` : ""}
-              ${safeUpstreamUrl ? `<a class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" href=\"${safeUpstreamUrl}\" target=\"_blank\" rel=\"noopener\"><i class=\"ti ti-external-link text-base\"></i>Upstream</a>` : ""}
+              ${entry.package ? `<a class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" href=\"${nixosSearchUrl}\" target=\"_blank\" rel=\"noopener\"><i class=\"ti ti-search text-base\"></i>NixOS Search</a>` : ""}
             </div>
           `;
           fragment.appendChild(card);
