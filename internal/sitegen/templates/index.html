@@ -573,7 +573,7 @@
         const info = state.prefixIndex[key];
         if (!info) return;
         state.loadedPrefixes.add(key);
-        const response = await fetch(resolveDataPath(info.file), { cache: "no-store" });
+        const response = await fetch(info.file, { cache: "no-store" });
         const payload = await response.json();
         state.prefixData[key] = payload.entries || [];
         (payload.entries || []).forEach(ensureIndexed);
@@ -584,7 +584,7 @@
         if (!chunk) return;
         state.loading = true;
         updateProgress();
-        const response = await fetch(resolveDataPath(chunk.file), { cache: "no-store" });
+        const response = await fetch(chunk.file, { cache: "no-store" });
         const payload = await response.json();
         state.data = state.data.concat(payload.entries || []);
         (payload.entries || []).forEach(ensureIndexed);
@@ -600,14 +600,6 @@
         const chunk = state.chunks[state.nextChunkIndex];
         state.nextChunkIndex += 1;
         await loadChunk(chunk);
-      }
-
-      function resolveDataPath(file) {
-        if (!file) return file;
-        if (file.startsWith("http://") || file.startsWith("https://") || file.startsWith("/") || file.startsWith("data/")) {
-          return file;
-        }
-        return `data/${file}`;
       }
 
       function hasActiveFilters(query) {
@@ -717,34 +709,27 @@
         }, 1400);
       }
 
-      if (cards) {
-        cards.addEventListener("click", (event) => {
-          const button = event.target.closest("[data-copy-package]");
-          if (!button) return;
-          const value = button.getAttribute("data-copy-package");
-          if (!value) return;
-          copyText(value).then(() => {
-            showToast("Copied");
-          }).catch(() => {
-            // Silent fallback if clipboard is blocked.
-          });
+      cards.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-copy-package]");
+        if (!button) return;
+        const value = button.getAttribute("data-copy-package");
+        if (!value) return;
+        copyText(value).then(() => {
+          showToast("Copied");
+        }).catch(() => {
+          // Silent fallback if clipboard is blocked.
         });
-      }
+      });
 
       function setLogStatus(message) {
-        if (logStatus) {
-          logStatus.textContent = message;
-        }
+        logStatus.textContent = message;
       }
 
       function setLogLoading(isLoading) {
-        if (logCancel) {
-          logCancel.classList.toggle("hidden", !isLoading);
-        }
+        logCancel.classList.toggle("hidden", !isLoading);
       }
 
       function renderLogContent(text) {
-        if (!logContent) return;
         logContent.textContent = text || "";
       }
 
@@ -826,13 +811,8 @@
       }
 
       function openLogModal(url, title) {
-        if (!logModal || !logContent) return;
-        if (logTitle) {
-          logTitle.textContent = title || "Log";
-        }
-        if (logOpenExternal) {
-          logOpenExternal.href = url || "#";
-        }
+        logTitle.textContent = title || "Log";
+        logOpenExternal.href = url || "#";
         logModal.classList.remove("hidden");
         logModal.classList.add("flex");
         document.body.classList.add("overflow-hidden");
@@ -840,7 +820,6 @@
       }
 
       function closeLogModal() {
-        if (!logModal) return;
         if (logController) {
           logController.abort();
           logController = null;
@@ -852,30 +831,22 @@
         document.body.classList.remove("overflow-hidden");
       }
 
-      if (cards) {
-        cards.addEventListener("click", (event) => {
-          const button = event.target.closest("[data-log-url]");
-          if (!button) return;
-          const url = button.getAttribute("data-log-url");
-          if (!url) return;
-          const title = button.getAttribute("data-log-title");
-          openLogModal(url, title);
-        });
-      }
+      cards.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-log-url]");
+        if (!button) return;
+        const url = button.getAttribute("data-log-url");
+        if (!url) return;
+        const title = button.getAttribute("data-log-title");
+        openLogModal(url, title);
+      });
 
-      if (logBackdrop) {
-        logBackdrop.addEventListener("click", closeLogModal);
-      }
-      if (logClose) {
-        logClose.addEventListener("click", closeLogModal);
-      }
-      if (logCancel) {
-        logCancel.addEventListener("click", () => {
-          if (logController) {
-            logController.abort();
-          }
-        });
-      }
+      logBackdrop.addEventListener("click", closeLogModal);
+      logClose.addEventListener("click", closeLogModal);
+      logCancel.addEventListener("click", () => {
+        if (logController) {
+          logController.abort();
+        }
+      });
       window.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
           closeLogModal();
@@ -910,20 +881,18 @@
       document.getElementById("sortSelect").addEventListener("change", filterAndRender);
 
       const loadButton = document.getElementById("loadButton");
-      if (loadButton) {
-        loadButton.addEventListener("click", () => {
-          const query = normalizeQuery(document.getElementById("searchInput").value);
-          if (query) {
-            state.renderLimit += state.renderStep;
-            filterAndRender();
-          }
-          if (hasActiveFilters(query)) {
-            loadUntilMatches(10, 8);
-            return;
-          }
-          loadUntilMatches(1, 8);
-        });
-      }
+      loadButton.addEventListener("click", () => {
+        const query = normalizeQuery(document.getElementById("searchInput").value);
+        if (query) {
+          state.renderLimit += state.renderStep;
+          filterAndRender();
+        }
+        if (hasActiveFilters(query)) {
+          loadUntilMatches(10, 8);
+          return;
+        }
+        loadUntilMatches(1, 8);
+      });
 
       const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
@@ -935,7 +904,6 @@
 
       function updateObserver() {
         const loadMore = document.getElementById("loadMore");
-        if (!loadMore) return;
         if (hasActiveFilters(state.lastQuery)) {
           observer.unobserve(loadMore);
         } else {
@@ -947,22 +915,20 @@
 
       loadIndex();
       const backToTop = document.getElementById("backToTop");
-      if (backToTop) {
-        const toggleBackToTop = () => {
-          if (window.scrollY > 400) {
-            backToTop.classList.remove("hidden");
-            backToTop.classList.add("flex");
-          } else {
-            backToTop.classList.add("hidden");
-            backToTop.classList.remove("flex");
-          }
-        };
-        window.addEventListener("scroll", toggleBackToTop, { passive: true });
-        toggleBackToTop();
-        backToTop.addEventListener("click", () => {
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        });
-      }
+      const toggleBackToTop = () => {
+        if (window.scrollY > 400) {
+          backToTop.classList.remove("hidden");
+          backToTop.classList.add("flex");
+        } else {
+          backToTop.classList.add("hidden");
+          backToTop.classList.remove("flex");
+        }
+      };
+      window.addEventListener("scroll", toggleBackToTop, { passive: true });
+      toggleBackToTop();
+      backToTop.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
     </script>
   </body>
 </html>
