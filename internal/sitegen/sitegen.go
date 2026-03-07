@@ -46,15 +46,12 @@ type LogEntry struct {
 
 type SiteData struct {
 	GeneratedAt string     `json:"generated_at"`
-	BaseURL     string     `json:"base_url"`
 	Entries     []LogEntry `json:"entries"`
 }
 
 type ChunkInfo struct {
 	File    string `json:"file"`
 	Count   int    `json:"count"`
-	MinDate string `json:"min_date,omitempty"`
-	MaxDate string `json:"max_date,omitempty"`
 }
 
 type PrefixInfo struct {
@@ -64,9 +61,7 @@ type PrefixInfo struct {
 
 type SiteIndex struct {
 	GeneratedAt string         `json:"generated_at"`
-	BaseURL     string         `json:"base_url"`
 	Total       int            `json:"total"`
-	ChunkSize   int            `json:"chunk_size"`
 	Statuses    map[string]int `json:"statuses"`
 	Chunks      []ChunkInfo    `json:"chunks"`
 	Prefixes    map[string]PrefixInfo `json:"prefixes"`
@@ -114,7 +109,6 @@ func FetchAndParse(client *http.Client, opts Options) (SiteData, error) {
 
 	return SiteData{
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
-		BaseURL:     opts.BaseURL,
 		Entries:     entries,
 	}, nil
 }
@@ -564,10 +558,6 @@ func WriteChunkedData(dir string, payload SiteData, chunkSize int) (SiteIndex, e
 		}
 
 		info := ChunkInfo{File: file, Count: len(chunkEntries)}
-		if len(chunkEntries) > 0 {
-			info.MaxDate = chunkEntries[0].Date
-			info.MinDate = chunkEntries[len(chunkEntries)-1].Date
-		}
 		chunks = append(chunks, info)
 	}
 
@@ -603,9 +593,7 @@ func WriteChunkedData(dir string, payload SiteData, chunkSize int) (SiteIndex, e
 
 	index := SiteIndex{
 		GeneratedAt: payload.GeneratedAt,
-		BaseURL:     payload.BaseURL,
 		Total:       len(payload.Entries),
-		ChunkSize:   chunkSize,
 		Statuses:    statuses,
 		Chunks:      chunks,
 		Prefixes:    prefixIndex,
