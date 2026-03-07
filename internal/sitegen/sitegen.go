@@ -10,8 +10,8 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
-	"path/filepath"
 	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -378,7 +378,7 @@ func sanitizeURL(value string) string {
 
 func localLogURL(pkg string, date string) string {
 	_ = date
-	return path.Join(fmt.Sprintf("%s.log", pkg))
+	return path.Join("logs", fmt.Sprintf("%s.log", pkg))
 }
 
 func writeLogFile(dir string, pkg string, body []byte) error {
@@ -579,6 +579,10 @@ func WriteChunkedData(dir string, payload SiteData, chunkSize int) (SiteIndex, e
 	if err := EnsureDir(dir); err != nil {
 		return SiteIndex{}, err
 	}
+	dataDir := pathJoin(dir, "data")
+	if err := EnsureDir(dataDir); err != nil {
+		return SiteIndex{}, err
+	}
 
 	statuses := map[string]int{}
 	for _, entry := range payload.Entries {
@@ -592,7 +596,7 @@ func WriteChunkedData(dir string, payload SiteData, chunkSize int) (SiteIndex, e
 			end = len(payload.Entries)
 		}
 		chunkEntries := payload.Entries[i:end]
-		file := fmt.Sprintf("entries-%04d.json", len(chunks)+1)
+		file := path.Join("data", fmt.Sprintf("entries-%04d.json", len(chunks)+1))
 		chunkPath := pathJoin(dir, file)
 		chunkPayload := struct {
 			Entries []LogEntry `json:"entries"`
@@ -628,7 +632,7 @@ func WriteChunkedData(dir string, payload SiteData, chunkSize int) (SiteIndex, e
 		sort.Strings(keys)
 		for _, key := range keys {
 			entries := prefixes[key]
-			file := fmt.Sprintf("prefix-%s.json", key)
+			file := path.Join("data", fmt.Sprintf("prefix-%s.json", key))
 			chunkPayload := struct {
 				Entries []LogEntry `json:"entries"`
 			}{Entries: entries}

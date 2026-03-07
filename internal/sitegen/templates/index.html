@@ -482,7 +482,7 @@
         if (match) {
           return encodeURI(match[0]);
         }
-        const localMatch = stripped.match(/^[A-Za-z0-9._+-]+\\.log$/);
+        const localMatch = stripped.match(/^logs\\/[A-Za-z0-9._+-]+\\.log$/);
         if (localMatch) {
           return encodeURI(stripped);
         }
