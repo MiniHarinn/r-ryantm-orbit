@@ -76,7 +76,6 @@ type SiteIndex struct {
 
 type SiteMeta struct {
 	GeneratedAt string
-	BaseURL     string
 	RepoStarsPrimary   string
 	RepoStarsSecondary string
 }
@@ -122,18 +121,6 @@ func FetchAndParse(client *http.Client, opts Options) (SiteData, error) {
 	}, nil
 }
 
-func LoadData(path string) (SiteData, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return SiteData{}, err
-	}
-	var payload SiteData
-	if err := json.Unmarshal(data, &payload); err != nil {
-		return SiteData{}, err
-	}
-	return payload, nil
-}
-
 func LoadIndex(path string) (SiteIndex, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -146,14 +133,6 @@ func LoadIndex(path string) (SiteIndex, error) {
 	return payload, nil
 }
 
-func WriteJSON(path string, payload SiteData) error {
-	data, err := json.MarshalIndent(payload, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, data, 0o644)
-}
-
 func WriteHTML(path string, meta SiteMeta) error {
 	tplData, err := templateFS.ReadFile("templates/index.html")
 	if err != nil {
@@ -162,7 +141,6 @@ func WriteHTML(path string, meta SiteMeta) error {
 
 	replacer := strings.NewReplacer(
 		"{{.GeneratedAt}}", meta.GeneratedAt,
-		"{{.BaseURL}}", meta.BaseURL,
 		"{{.RepoStarsPrimary}}", meta.RepoStarsPrimary,
 		"{{.RepoStarsSecondary}}", meta.RepoStarsSecondary,
 	)
@@ -523,13 +501,6 @@ func parseLinks(body []byte) ([]string, error) {
 
 func EnsureDir(path string) error {
 	return os.MkdirAll(path, 0o755)
-}
-
-func WriteData(path string, payload SiteData) error {
-	if err := EnsureDir(path); err != nil {
-		return err
-	}
-	return WriteJSON(pathJoin(path, "data.json"), payload)
 }
 
 func WriteSite(path string, meta SiteMeta) error {

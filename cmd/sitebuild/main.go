@@ -58,7 +58,6 @@ func main() {
 
 	meta := sitegen.SiteMeta{
 		GeneratedAt:        index.GeneratedAt,
-		BaseURL:            index.BaseURL,
 		RepoStarsPrimary:   formatStars(primaryStars),
 		RepoStarsSecondary: formatStars(secondaryStars),
 	}
