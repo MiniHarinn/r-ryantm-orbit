@@ -14,7 +14,7 @@ import (
 func main() {
 	opts := sitegen.Options{}
 	outDir := "dist"
-	chunkSize := 800
+	chunkSize := 128
 	logDir := ""
 
 	flag.StringVar(&opts.BaseURL, "base", "https://nixpkgs-update-logs.nix-community.org/", "base URL for logs")
