@@ -220,13 +220,20 @@
           <div class="min-w-0">
             <div class="text-[10px] uppercase tracking-[0.3em] text-slate-500">Log viewer</div>
             <div id="logTitle" class="text-sm text-slate-100 truncate">Log</div>
+            <div id="logStatus" class="mt-1 text-[10px] uppercase tracking-[0.24em] text-slate-500">Idle</div>
           </div>
-          <button id="logClose" type="button" class="rounded-full border border-slate-600/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-slate-100 hover:bg-night-800/70 transition">
-            Close
-          </button>
+          <div class="flex items-center gap-2">
+            <a id="logOpenExternal" class="rounded-full border border-slate-600/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-slate-100 hover:bg-night-800/70 transition" href="#" target="_blank" rel="noopener">Open</a>
+            <button id="logCancel" type="button" class="hidden rounded-full border border-slate-600/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-slate-100 hover:bg-night-800/70 transition">
+              Stop
+            </button>
+            <button id="logClose" type="button" class="rounded-full border border-slate-600/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-slate-100 hover:bg-night-800/70 transition">
+              Close
+            </button>
+          </div>
         </div>
-        <div class="flex-1 bg-night-950/80">
-          <iframe id="logFrame" title="Log viewer" class="h-full w-full" sandbox="allow-same-origin allow-scripts"></iframe>
+        <div class="flex-1 bg-night-950/80 overflow-auto">
+          <pre id="logContent" class="min-h-full p-5 font-mono text-[11px] leading-relaxed text-slate-200 whitespace-pre-wrap break-words"></pre>
         </div>
       </div>
     </div>
@@ -472,8 +479,14 @@
         const unescaped = cleaned.replace(/\\+"/g, "\"").trim();
         const stripped = unescaped.replace(/^"+|"+$/g, "");
         const match = stripped.match(/https?:\/\/[^\s"'<>]+/i);
-        if (!match) return "";
-        return encodeURI(match[0]);
+        if (match) {
+          return encodeURI(match[0]);
+        }
+        const localMatch = stripped.match(/^[A-Za-z0-9._+-]+\\.log$/);
+        if (localMatch) {
+          return encodeURI(stripped);
+        }
+        return "";
       }
 
       function renderCards(entries) {
@@ -671,8 +684,14 @@
       const logBackdrop = document.getElementById("logBackdrop");
       const logClose = document.getElementById("logClose");
       const logTitle = document.getElementById("logTitle");
-      const logFrame = document.getElementById("logFrame");
+      const logStatus = document.getElementById("logStatus");
+      const logContent = document.getElementById("logContent");
+      const logOpenExternal = document.getElementById("logOpenExternal");
+      const logCancel = document.getElementById("logCancel");
       let toastTimer = null;
+      let logController = null;
+      let logCache = new Map();
+      const LOG_MAX_BYTES = 512 * 1024;
 
       function showToast(message) {
         if (!toast) return;
@@ -702,22 +721,124 @@
         });
       });
 
+      function setLogStatus(message) {
+        if (logStatus) {
+          logStatus.textContent = message;
+        }
+      }
+
+      function setLogLoading(isLoading) {
+        if (logCancel) {
+          logCancel.classList.toggle("hidden", !isLoading);
+        }
+      }
+
+      function renderLogContent(text) {
+        if (!logContent) return;
+        logContent.textContent = text || "";
+      }
+
+      async function fetchLog(url) {
+        if (!url) return;
+        if (logController) {
+          logController.abort();
+        }
+        logController = new AbortController();
+        setLogLoading(true);
+        setLogStatus("Loading...");
+        renderLogContent("");
+
+        try {
+          const cached = logCache.get(url);
+          if (cached) {
+            renderLogContent(cached.text);
+            setLogStatus(cached.truncated ? "Cached (truncated) — use Open for full log" : "Cached");
+            setLogLoading(false);
+            return;
+          }
+
+          const response = await fetch(url, { signal: logController.signal });
+          if (!response.ok) {
+            throw new Error(`Log fetch failed (${response.status})`);
+          }
+
+          if (!response.body) {
+            const text = await response.text();
+            const truncated = text.length > LOG_MAX_BYTES;
+            const trimmed = truncated ? text.slice(0, LOG_MAX_BYTES) : text;
+            logCache.set(url, { text: trimmed, truncated });
+            renderLogContent(trimmed);
+            setLogStatus(truncated ? "Loaded (truncated) — use Open for full log" : "Loaded");
+            setLogLoading(false);
+            return;
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let received = 0;
+          let rendered = "";
+          let lastFlush = 0;
+          let truncated = false;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (!value) continue;
+            received += value.length;
+            if (received > LOG_MAX_BYTES) {
+              const slice = value.slice(0, Math.max(LOG_MAX_BYTES - (received - value.length), 0));
+              rendered += decoder.decode(slice, { stream: true });
+              truncated = true;
+              await reader.cancel();
+              break;
+            }
+            rendered += decoder.decode(value, { stream: true });
+            if (rendered.length - lastFlush > 32768) {
+              renderLogContent(rendered);
+              lastFlush = rendered.length;
+            }
+          }
+
+          rendered += decoder.decode();
+          logCache.set(url, { text: rendered, truncated });
+          renderLogContent(rendered);
+          setLogStatus(truncated ? "Loaded (truncated) — use Open for full log" : "Loaded");
+        } catch (error) {
+          if (error && error.name === "AbortError") {
+            setLogStatus("Cancelled");
+          } else {
+            setLogStatus("Failed to load");
+            renderLogContent(String(error));
+          }
+        } finally {
+          setLogLoading(false);
+        }
+      }
+
       function openLogModal(url, title) {
-        if (!logModal || !logFrame) return;
+        if (!logModal || !logContent) return;
         if (logTitle) {
           logTitle.textContent = title || "Log";
         }
-        logFrame.src = url;
+        if (logOpenExternal) {
+          logOpenExternal.href = url || "#";
+        }
         logModal.classList.remove("hidden");
         logModal.classList.add("flex");
         document.body.classList.add("overflow-hidden");
+        fetchLog(url);
       }
 
       function closeLogModal() {
-        if (!logModal || !logFrame) return;
+        if (!logModal) return;
+        if (logController) {
+          logController.abort();
+          logController = null;
+        }
         logModal.classList.add("hidden");
         logModal.classList.remove("flex");
-        logFrame.src = "about:blank";
+        renderLogContent("");
+        setLogStatus("Idle");
         document.body.classList.remove("overflow-hidden");
       }
 
@@ -735,6 +856,13 @@
       }
       if (logClose) {
         logClose.addEventListener("click", closeLogModal);
+      }
+      if (logCancel) {
+        logCancel.addEventListener("click", () => {
+          if (logController) {
+            logController.abort();
+          }
+        });
       }
       window.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {

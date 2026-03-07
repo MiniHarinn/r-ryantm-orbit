@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path/filepath"
 	"path"
 	"regexp"
 	"sort"
@@ -48,7 +49,6 @@ type LogEntry struct {
 type SiteData struct {
 	GeneratedAt string     `json:"generated_at"`
 	BaseURL     string     `json:"base_url"`
-	Mode        string     `json:"mode"`
 	Entries     []LogEntry `json:"entries"`
 }
 
@@ -67,7 +67,6 @@ type PrefixInfo struct {
 type SiteIndex struct {
 	GeneratedAt string         `json:"generated_at"`
 	BaseURL     string         `json:"base_url"`
-	Mode        string         `json:"mode"`
 	Total       int            `json:"total"`
 	ChunkSize   int            `json:"chunk_size"`
 	Statuses    map[string]int `json:"statuses"`
@@ -78,19 +77,18 @@ type SiteIndex struct {
 type SiteMeta struct {
 	GeneratedAt string
 	BaseURL     string
-	Mode        string
 	RepoStarsPrimary   string
 	RepoStarsSecondary string
 }
 
 type Options struct {
 	BaseURL     string
-	Mode        string
 	Workers     int
 	IndexWorkers int
 	MaxPackages int
 	HTTPTimeout time.Duration
 	UserAgent   string
+	LogDir      string
 	Verbose     bool
 }
 
@@ -107,7 +105,7 @@ func FetchAndParse(client *http.Client, opts Options) (SiteData, error) {
 		logf(opts, "limiting to %d packages", len(packages))
 	}
 
-	logf(opts, "building log tasks (mode=%s)", opts.Mode)
+	logf(opts, "building log tasks")
 	tasks, err := buildTasksConcurrent(client, opts, packages)
 	if err != nil {
 		return SiteData{}, err
@@ -120,7 +118,6 @@ func FetchAndParse(client *http.Client, opts Options) (SiteData, error) {
 	return SiteData{
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
 		BaseURL:     opts.BaseURL,
-		Mode:        opts.Mode,
 		Entries:     entries,
 	}, nil
 }
@@ -166,7 +163,6 @@ func WriteHTML(path string, meta SiteMeta) error {
 	replacer := strings.NewReplacer(
 		"{{.GeneratedAt}}", meta.GeneratedAt,
 		"{{.BaseURL}}", meta.BaseURL,
-		"{{.Mode}}", meta.Mode,
 		"{{.RepoStarsPrimary}}", meta.RepoStarsPrimary,
 		"{{.RepoStarsSecondary}}", meta.RepoStarsSecondary,
 	)
@@ -253,23 +249,12 @@ func buildTasksConcurrent(client *http.Client, opts Options, packages []string) 
 				}
 				sort.Strings(dates)
 
-				var pkgTasks []LogTask
-				if opts.Mode == "all" {
-					for _, date := range dates {
-						pkgTasks = append(pkgTasks, LogTask{
-							Package: pkg,
-							Date:    date,
-							URL:     fmt.Sprintf("%s%s/%s.log", opts.BaseURL, pkg, date),
-						})
-					}
-				} else {
-					latest := dates[len(dates)-1]
-					pkgTasks = append(pkgTasks, LogTask{
-						Package: pkg,
-						Date:    latest,
-						URL:     fmt.Sprintf("%s%s/%s.log", opts.BaseURL, pkg, latest),
-					})
-				}
+				latest := dates[len(dates)-1]
+				pkgTasks := []LogTask{{
+					Package: pkg,
+					Date:    latest,
+					URL:     fmt.Sprintf("%s%s/%s.log", opts.BaseURL, pkg, latest),
+				}}
 				results <- result{tasks: pkgTasks}
 			}
 		}()
@@ -318,7 +303,12 @@ func fetchLogs(client *http.Client, opts Options, tasks []LogTask) []LogEntry {
 		go func() {
 			defer wg.Done()
 			for task := range jobs {
-				entry := LogEntry{Package: task.Package, Date: task.Date, LogURL: sanitizeURL(task.URL)}
+				entry := LogEntry{Package: task.Package, Date: task.Date}
+				if opts.LogDir != "" {
+					entry.LogURL = localLogURL(task.Package, task.Date)
+				} else {
+					entry.LogURL = sanitizeURL(task.URL)
+				}
 				logf(opts, "fetching log %s", task.URL)
 				body, err := fetch(client, opts, task.URL)
 				if err != nil {
@@ -326,6 +316,11 @@ func fetchLogs(client *http.Client, opts Options, tasks []LogTask) []LogEntry {
 					entry.Error = err.Error()
 					results <- entry
 					continue
+				}
+				if opts.LogDir != "" {
+					if err := writeLogFile(opts.LogDir, task.Package, body); err != nil {
+						logf(opts, "failed to write log file for %s: %v", task.Package, err)
+					}
 				}
 
 				parseLog(body, &entry)
@@ -379,6 +374,39 @@ func sanitizeURL(value string) string {
 		return match
 	}
 	return ""
+}
+
+func localLogURL(pkg string, date string) string {
+	_ = date
+	return path.Join(fmt.Sprintf("%s.log", pkg))
+}
+
+func writeLogFile(dir string, pkg string, body []byte) error {
+	if dir == "" {
+		return nil
+	}
+	if !isSafePathSegment(pkg) {
+		return fmt.Errorf("unsafe package path: %s", pkg)
+	}
+	if err := EnsureDir(dir); err != nil {
+		return err
+	}
+	filename := fmt.Sprintf("%s.log", pkg)
+	path := filepath.Join(dir, filename)
+	return os.WriteFile(path, body, 0o644)
+}
+
+func isSafePathSegment(value string) bool {
+	if value == "" {
+		return false
+	}
+	if strings.Contains(value, "/") || strings.Contains(value, "\\") {
+		return false
+	}
+	if strings.Contains(value, "..") {
+		return false
+	}
+	return true
 }
 
 func deriveStatus(text string) string {
@@ -618,7 +646,6 @@ func WriteChunkedData(dir string, payload SiteData, chunkSize int) (SiteIndex, e
 	index := SiteIndex{
 		GeneratedAt: payload.GeneratedAt,
 		BaseURL:     payload.BaseURL,
-		Mode:        payload.Mode,
 		Total:       len(payload.Entries),
 		ChunkSize:   chunkSize,
 		Statuses:    statuses,
