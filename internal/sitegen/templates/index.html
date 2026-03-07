@@ -213,6 +213,24 @@
       <span id="toastMessage">Copied</span>
     </div>
 
+    <div id="logModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+      <div id="logBackdrop" class="absolute inset-0 bg-night-950/70 backdrop-blur-sm"></div>
+      <div class="relative z-10 w-[min(1280px,96vw)] rounded-[28px] border border-slate-600/40 bg-night-900/95 shadow-panel flex flex-col overflow-hidden" style="height: 92vh; max-height: 96vh; min-height: 70vh;">
+        <div class="flex items-center justify-between gap-3 border-b border-slate-700/40 px-5 py-4">
+          <div class="min-w-0">
+            <div class="text-[10px] uppercase tracking-[0.3em] text-slate-500">Log viewer</div>
+            <div id="logTitle" class="text-sm text-slate-100 truncate">Log</div>
+          </div>
+          <button id="logClose" type="button" class="rounded-full border border-slate-600/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-slate-100 hover:bg-night-800/70 transition">
+            Close
+          </button>
+        </div>
+        <div class="flex-1 bg-night-950/80">
+          <iframe id="logFrame" title="Log viewer" class="h-full w-full" sandbox="allow-same-origin allow-scripts"></iframe>
+        </div>
+      </div>
+    </div>
+
     <script>
       const STATUS_META = {
         completed: { label: "Completed", className: "border-jade/40 bg-jade/10 text-jade", borderClass: "border-l-jade" },
@@ -450,10 +468,12 @@
 
       function safeUrl(value) {
         if (!value) return "";
-        if (value.startsWith("http://") || value.startsWith("https://")) {
-          return encodeURI(value);
-        }
-        return "";
+        const cleaned = String(value).trim();
+        const unescaped = cleaned.replace(/\\+"/g, "\"").trim();
+        const stripped = unescaped.replace(/^"+|"+$/g, "");
+        const match = stripped.match(/https?:\/\/[^\s"'<>]+/i);
+        if (!match) return "";
+        return encodeURI(match[0]);
       }
 
       function renderCards(entries) {
@@ -511,7 +531,8 @@
             </div>
             ${errorLine}
             <div class=\"flex flex-wrap gap-2 text-xs\">
-              <a class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" href=\"${safeLogUrl}\" target=\"_blank\" rel=\"noopener\"><i class=\"ti ti-notes text-base\"></i>Open log</a>
+              ${safeLogUrl ? `<button type=\"button\" class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" data-log-url=\"${safeLogUrl}\" data-log-title=\"${safePackage}\"><i class=\"ti ti-notes text-base\"></i>View log</button>` : ""}
+              ${safeLogUrl ? `<a class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" href=\"${safeLogUrl}\" target=\"_blank\" rel=\"noopener\"><i class=\"ti ti-external-link text-base\"></i>Open log</a>` : ""}
               ${safeUpstreamUrl ? `<a class=\"px-3 py-1.5 rounded-full border border-slate-500/40 hover:bg-night-800/60 transition inline-flex items-center gap-2\" href=\"${safeUpstreamUrl}\" target=\"_blank\" rel=\"noopener\"><i class=\"ti ti-external-link text-base\"></i>Upstream</a>` : ""}
             </div>
           `;
@@ -646,6 +667,11 @@
       const cards = document.getElementById("cards");
       const toast = document.getElementById("toast");
       const toastMessage = document.getElementById("toastMessage");
+      const logModal = document.getElementById("logModal");
+      const logBackdrop = document.getElementById("logBackdrop");
+      const logClose = document.getElementById("logClose");
+      const logTitle = document.getElementById("logTitle");
+      const logFrame = document.getElementById("logFrame");
       let toastTimer = null;
 
       function showToast(message) {
