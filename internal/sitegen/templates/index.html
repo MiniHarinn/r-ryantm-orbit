@@ -943,6 +943,18 @@
       }
 
       updateObserver();
+      let scrollTicking = false;
+      const maybeLoadOnScroll = () => {
+        if (scrollTicking) return;
+        scrollTicking = true;
+        requestAnimationFrame(() => {
+          scrollTicking = false;
+          if (isLoadMoreVisible() && !state.loading) {
+            loadNextChunk().then(autoFillViewport);
+          }
+        });
+      };
+      window.addEventListener("scroll", maybeLoadOnScroll, { passive: true });
 
       loadIndex();
       const backToTop = document.getElementById("backToTop");
