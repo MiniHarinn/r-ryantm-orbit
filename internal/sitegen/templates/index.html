@@ -466,7 +466,7 @@
 
         if (query) {
           const key = prefixKeyFromSearch(query);
-          if (key && !state.loadedPrefixes.has(key)) {
+          if (!state.loadedPrefixes.has(key)) {
             loadPrefix(key);
           }
         }

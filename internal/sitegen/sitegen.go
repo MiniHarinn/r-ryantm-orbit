@@ -26,7 +26,6 @@ var templateFS embed.FS
 
 var (
 	updateInfoRegex = regexp.MustCompile(`(?i)([\w.+-]+)\s+([^\s]+)\s+->\s+([^\s]+)(?:\s+https?://[^\s]+)?`) // pkg old -> new (optional url)
-	urlRegex        = regexp.MustCompile(`https?://[^\s"'<>]+`)
 )
 
 type LogTask struct {
@@ -221,7 +220,6 @@ func buildTasksConcurrent(client *http.Client, opts Options, packages []string) 
 				}
 
 				if len(dates) == 0 {
-					results <- result{tasks: nil}
 					continue
 				}
 				sort.Strings(dates)
@@ -249,7 +247,7 @@ func buildTasksConcurrent(client *http.Client, opts Options, packages []string) 
 		close(jobs)
 	}()
 
-	var tasks []LogTask
+	tasks := make([]LogTask, 0, len(packages))
 	var errs []error
 	for res := range results {
 		if res.err != nil {
@@ -282,9 +280,9 @@ func fetchLogs(client *http.Client, opts Options, tasks []LogTask) []LogEntry {
 			for task := range jobs {
 				entry := LogEntry{Package: task.Package, Date: task.Date}
 				if opts.LogDir != "" {
-					entry.LogURL = localLogURL(task.Package, task.Date)
+					entry.LogURL = localLogURL(task.Package)
 				} else {
-					entry.LogURL = sanitizeURL(task.URL)
+					entry.LogURL = task.URL
 				}
 				logf(opts, "fetching log %s", task.URL)
 				body, err := fetch(client, opts, task.URL)
@@ -318,7 +316,7 @@ func fetchLogs(client *http.Client, opts Options, tasks []LogTask) []LogEntry {
 		close(jobs)
 	}()
 
-	var entries []LogEntry
+	entries := make([]LogEntry, 0, len(tasks))
 	for entry := range results {
 		entries = append(entries, entry)
 	}
@@ -327,11 +325,10 @@ func fetchLogs(client *http.Client, opts Options, tasks []LogTask) []LogEntry {
 
 func parseLog(body []byte, entry *LogEntry) {
 	text := strings.ReplaceAll(string(body), "\r\n", "\n")
-	lines := strings.Split(text, "\n")
 
 	entry.Status = deriveStatus(text)
 	if entry.Status == "failed" {
-		entry.Error = deriveError(lines)
+		entry.Error = deriveError(strings.Split(text, "\n"))
 	}
 
 	if match := updateInfoRegex.FindStringSubmatch(text); len(match) == 4 {
@@ -341,19 +338,7 @@ func parseLog(body []byte, entry *LogEntry) {
 
 }
 
-func sanitizeURL(value string) string {
-	cleaned := strings.TrimSpace(value)
-	if cleaned == "" {
-		return ""
-	}
-	if match := urlRegex.FindString(cleaned); match != "" {
-		return match
-	}
-	return ""
-}
-
-func localLogURL(pkg string, date string) string {
-	_ = date
+func localLogURL(pkg string) string {
 	return path.Join("logs", fmt.Sprintf("%s.log", pkg))
 }
 
