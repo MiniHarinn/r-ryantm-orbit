@@ -10,7 +10,7 @@ tasks:
   fetch:
     desc: Fetch and parse logs into data.json
     cmds:
-      - nix develop --command go run ./cmd/fetchdata -out {{.DIST_DIR}}
+      - nix develop --command go run ./cmd/fetchdata -out {{.DIST_DIR}} -workers 64 -index-workers 64 -verbose
 
   build:
     desc: Build site from existing index.json
