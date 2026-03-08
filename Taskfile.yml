@@ -1,0 +1,19 @@
+version: "3"
+
+tasks:
+  generate:
+    desc: Run the Go generator.
+    cmds:
+      - nix develop -c sh -c "cd generator && go run ."
+  
+  copy:
+    desc: MV generated data into correct folder
+    cmds:
+      - mv ./generator/generator-output/astro-static ./src/data
+      - mv ./generator/generator-output/public ./public/data
+
+  clean:
+    desc: Clean moved file
+    cmds:
+      - rm -r ./src/data
+      - rm -r ./public/data
