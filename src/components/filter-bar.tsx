@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { IconSearch, IconFilter, IconSortAscending } from "@tabler/icons-react"
-import { SORT_OPTIONS, STATUS_FILTERS, STATUS_META, type PackageFilters } from "@/components/package-types"
+import { SORT_OPTIONS, STATUS_FILTERS, STATUS_META, type PackageFilters } from "@/lib/package-types"
 
 type FilterBarProps = {
   value: PackageFilters

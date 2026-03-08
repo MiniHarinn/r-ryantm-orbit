@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { FilterBar } from "@/components/filter-bar"
 import { PackageCards } from "@/components/package-cards"
-import { type PackageFilters } from "@/components/package-types"
+import { type PackageFilters } from "@/lib/package-types"
 
 const defaultFilters: PackageFilters = {
   query: "",

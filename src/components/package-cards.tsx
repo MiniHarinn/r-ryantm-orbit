@@ -8,7 +8,7 @@ import {
   IconNotes,
   IconExternalLink,
 } from "@tabler/icons-react"
-import { STATUS_META, type PackageFilters } from "@/components/package-types"
+import { STATUS_META, type PackageFilters } from "@/lib/package-types"
 
 type PackageEntry = {
   id: number
