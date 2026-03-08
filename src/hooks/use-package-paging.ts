@@ -30,7 +30,6 @@ export const usePackagePaging = ({
   const lookupCacheRef = useRef(new Map<number, PackageEntry[]>())
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const sentinelIntersectingRef = useRef(false)
-  const visibleCountRef = useRef(0)
   const autoFillRef = useRef(false)
   const observerDrainRef = useRef(false)
 
@@ -200,14 +199,11 @@ export const usePackagePaging = ({
     return isSearchMode ? sortPackages(filtered, filters.sort) : filtered
   }, [browsePackages, filters.sort, filters.status, isSearchMode, searchPackages])
 
-  useEffect(() => {
-    visibleCountRef.current = visiblePackages.length
-  }, [visiblePackages.length])
-
   const runAutoFill = useCallback(() => {
     if (isSearchMode) return
     if (filters.status === "all") return
     if (autoFillRef.current) return
+    if (visiblePackages.length >= MIN_FILTERED_VISIBLE) return
 
     let cancelled = false
     const run = async () => {
@@ -217,7 +213,7 @@ export const usePackagePaging = ({
           !cancelled &&
           hasMoreRef.current &&
           !isLoadingRef.current &&
-          visibleCountRef.current < MIN_FILTERED_VISIBLE
+          visiblePackages.length < MIN_FILTERED_VISIBLE
         ) {
           const loaded = await loadBrowseChunk()
           if (!loaded) break
@@ -231,22 +227,9 @@ export const usePackagePaging = ({
     return () => {
       cancelled = true
     }
-  }, [filters.status, isSearchMode, loadBrowseChunk])
+  }, [filters.status, isSearchMode, loadBrowseChunk, visiblePackages.length])
 
   useEffect(() => runAutoFill(), [runAutoFill])
-
-  useEffect(() => {
-    if (filters.status === "all") return
-    if (isSearchMode) return
-    if (visiblePackages.length >= MIN_FILTERED_VISIBLE) return
-    runAutoFill()
-  }, [
-    browsePackages.length,
-    filters.status,
-    isSearchMode,
-    runAutoFill,
-    visiblePackages.length,
-  ])
 
   return {
     visiblePackages,
