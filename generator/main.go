@@ -10,7 +10,7 @@ import (
 
 func main() {
 	baseURL := "https://nixpkgs-update-logs.nix-community.org/"
-	outDir := "./output"
+	outDir := "./generator-output"
 	timeout := 45 * time.Second
 	workers := runtime.NumCPU() * 6
 
