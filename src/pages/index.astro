@@ -1,9 +1,7 @@
 ---
 import Layout from "@/layouts/main.astro"
-import { Button } from "@/components/ui/button"
 import FleetOverview from "@/components/fleet-overview.astro"
-import { FilterBar } from "@/components/filter-bar"
-import { PackageCards } from "@/components/package-cards"
+import { PackageExplorer } from "@/components/package-explorer"
 import GithubPill from "@/components/github-pill.astro"
 import { IconPlanet } from "@tabler/icons-react"
 ---
@@ -34,11 +32,5 @@ import { IconPlanet } from "@tabler/icons-react"
     </div>
   </section>
 
-  <section class="sticky top-4 z-20 mx-auto w-full max-w-6xl px-6 pb-10">
-    <FilterBar client:load />
-  </section>
-
-  <section class="mx-auto w-full max-w-6xl px-6 pb-16">
-    <PackageCards client:load />
-  </section>
+  <PackageExplorer client:load />
 </Layout>

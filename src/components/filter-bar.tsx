@@ -7,20 +7,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { IconAdjustments, IconSearch, IconFilter, IconSortAscending } from "@tabler/icons-react"
+import { IconSearch, IconFilter, IconSortAscending } from "@tabler/icons-react"
+import { SORT_OPTIONS, STATUS_FILTERS, STATUS_META, type PackageFilters } from "@/components/package-types"
 
-export function FilterBar() {
-  const statuses = [
-    { label: "Completed", className: "status-success-border status-success-text" },
-    { label: "Failed", className: "status-error-border status-error-text" },
-    { label: "Opted out", className: "status-warning-border status-warning-text" },
-    { label: "Unknown", className: "status-neutral-border status-neutral-text" },
-  ]
-  const sortOptions = [
-    { value: "date_desc", label: "Newest first" },
-    { value: "date_asc", label: "Oldest first" },
-  ]
+type FilterBarProps = {
+  value: PackageFilters
+  onChange: (next: PackageFilters) => void
+}
 
+export function FilterBar({ value, onChange }: FilterBarProps) {
   return (
     <section className="rounded-3xl border bg-card p-5 text-card-foreground shadow-sm">
       <div className="grid gap-4 lg:grid-cols-[2fr_1.6fr_0.9fr] lg:items-start">
@@ -30,7 +25,11 @@ export function FilterBar() {
             Search
           </label>
           <div className="mt-2">
-            <Input placeholder="Package name" />
+            <Input
+              placeholder="Package name"
+              value={value.query}
+              onChange={(event) => onChange({ ...value, query: event.target.value })}
+            />
           </div>
         </div>
 
@@ -40,15 +39,27 @@ export function FilterBar() {
             Status
           </label>
           <div className="mt-2 flex min-h-9 flex-wrap items-center gap-2">
-            {statuses.map((status) => (
-              <Badge
-                key={status.label}
-                variant="outline"
-                className={`px-3 py-1 ${status.className}`}
-              >
-                {status.label}
-              </Badge>
-            ))}
+            {STATUS_FILTERS.map((status) => {
+              const meta = status.value === "all" ? null : STATUS_META[status.value]
+              const isActive = value.status === status.value
+              const baseClass = meta ? meta.className : "status-neutral-border status-neutral-text"
+              const activeClass = isActive ? "bg-muted text-foreground" : "opacity-70 hover:opacity-100"
+              return (
+                <button
+                  key={status.label}
+                  type="button"
+                  className="rounded-full"
+                  onClick={() => onChange({ ...value, status: status.value })}
+                >
+                  <Badge
+                    variant="outline"
+                    className={`px-3 py-1 ${baseClass} ${activeClass}`}
+                  >
+                    {status.label}
+                  </Badge>
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -58,12 +69,17 @@ export function FilterBar() {
             Sort
           </label>
           <div className="mt-2">
-            <Select defaultValue="date_desc">
+            <Select
+              value={value.sort}
+              onValueChange={(next) =>
+                onChange({ ...value, sort: next as PackageFilters["sort"] })
+              }
+            >
               <SelectTrigger className="w-full lg:w-55">
                 <SelectValue placeholder="Newest first" />
               </SelectTrigger>
               <SelectContent>
-                {sortOptions.map((option) => (
+                {SORT_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
