@@ -23,10 +23,10 @@ export function PackageExplorer() {
 
   return (
     <>
-      <section className="sticky top-4 z-20 mx-auto w-full max-w-6xl px-6 pb-10">
+      <section className="sticky top-4 z-20 mx-auto w-full max-w-none px-4 pb-10 sm:max-w-6xl sm:px-6">
         <FilterBar value={filters} onChange={setFilters} />
       </section>
-      <section className="mx-auto w-full max-w-6xl px-6 pb-16">
+      <section className="mx-auto w-full max-w-none px-4 pb-16 sm:max-w-6xl sm:px-6">
         <PackageCards filters={filters} />
       </section>
     </>

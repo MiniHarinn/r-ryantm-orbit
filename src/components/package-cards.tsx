@@ -26,7 +26,7 @@ const PackageCard = ({ entry }: { entry: PackageEntry }) => {
   const statusMeta = STATUS_META[entry.status] ?? statusFallback
 
   return (
-    <article className="flex h-full flex-col gap-3 rounded-3xl border bg-card p-4 text-card-foreground shadow-sm">
+    <article className="flex h-full w-full min-w-0 flex-col gap-3 rounded-3xl border bg-card p-4 text-card-foreground shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="wrap-break-word text-base font-semibold">{entry.name}</h3>
@@ -110,7 +110,7 @@ export function PackageCards({ filters }: PackageCardsProps) {
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {visiblePackages.map((entry) => (
           <PackageCard key={`${entry.id}-${entry.date}`} entry={entry} />
         ))}
