@@ -42,6 +42,7 @@
     --status-error: 244 63 94;
     --status-warning: 251 191 36;
     --status-neutral: 148 163 184;
+    --status-indigo: 99 102 241;
 }
 
 .dark {
@@ -80,6 +81,7 @@
     --status-error: 244 63 94;
     --status-warning: 251 191 36;
     --status-neutral: 148 163 184;
+    --status-indigo: 129 140 248;
 }
 
 @theme inline {
@@ -183,6 +185,18 @@
 
   .status-neutral-bg {
     background-color: rgb(var(--status-neutral) / 0.12);
+  }
+
+  .status-indigo-text {
+    color: rgb(var(--status-indigo) / 1);
+  }
+
+  .status-indigo-border {
+    border-color: rgb(var(--status-indigo) / 0.4);
+  }
+
+  .status-indigo-bg {
+    background-color: rgb(var(--status-indigo) / 0.12);
   }
 
 }

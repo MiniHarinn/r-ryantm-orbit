@@ -14,7 +14,7 @@ export const STATUS_META: Record<number, StatusMeta> = {
   0: { label: "Failed", className: "status-error-border status-error-text" },
   1: { label: "Completed", className: "status-success-border status-success-text" },
   2: { label: "Opted out", className: "status-warning-border status-warning-text" },
-  3: { label: "Already updated", className: "status-success-border status-success-text" },
+  3: { label: "Already updated", className: "status-indigo-border status-indigo-text" },
 }
 
 export const STATUS_FILTERS: Array<{ value: PackageFilters["status"]; label: string }> =
