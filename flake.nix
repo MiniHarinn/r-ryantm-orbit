@@ -20,6 +20,7 @@
             packages = with pkgs; [
               go
               bun
+              caddy
             ];
           };
         });

@@ -18,3 +18,8 @@ tasks:
     cmds:
       - rm -r ./src/data
       - rm -r ./public/data
+
+  serve:
+    desc: Serve ./dist locally via Caddy
+    cmds:
+      - nix develop -c caddy file-server --root ./dist --listen :8080
