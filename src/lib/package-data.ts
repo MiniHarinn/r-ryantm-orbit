@@ -46,10 +46,16 @@ export const nixSearchUrl = (pkg: string) =>
 
 export const sortPackages = (
   packages: PackageEntry[],
-  sort: "date-desc" | "name-asc"
+  sort: "date-desc" | "name-asc" | "date-asc" | "name-desc"
 ) => {
   if (sort === "name-asc") {
     return [...packages].sort((a, b) => a.name.localeCompare(b.name))
+  }
+  if (sort === "name-desc") {
+    return [...packages].sort((a, b) => b.name.localeCompare(a.name))
+  }
+  if (sort === "date-asc") {
+    return [...packages].sort((a, b) => a.date - b.date || a.name.localeCompare(b.name))
   }
   return [...packages].sort((a, b) => b.date - a.date || a.name.localeCompare(b.name))
 }
