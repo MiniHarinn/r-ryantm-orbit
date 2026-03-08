@@ -4,7 +4,7 @@ type LogEntry struct {
 	ID      int
 	Package string
 	Date    int64
-	Status  int
+	Status  Status
 	OldVer  string
 	NewVer  string
 	Error   string

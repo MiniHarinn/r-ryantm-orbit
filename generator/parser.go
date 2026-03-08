@@ -9,6 +9,8 @@ var (
 	updateInfoRE   = regexp.MustCompile(`UPDATE_INFO:\s+\S+\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*->\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
 	versionArrowRE = regexp.MustCompile(`(?i)([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*(?:->|=>|→)\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
 	versionFromToRE = regexp.MustCompile(`(?i)from\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s+to\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+	versionLabelOldRE = regexp.MustCompile(`(?i)(?:current|old|previous)\s*version\s*[:=]\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+	versionLabelNewRE = regexp.MustCompile(`(?i)(?:new|latest|next)\s*version\s*[:=]\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
 )
 
 func deriveStatus(text string) string {
@@ -77,10 +79,10 @@ func deriveVersions(text, pkg string) (string, string) {
 	var newVer string
 	for _, line := range lines {
 		if oldVer == "" {
-			oldVer = parseVersionLabel(line, "current|old|previous")
+			oldVer = parseVersionLabel(line, versionLabelOldRE)
 		}
 		if newVer == "" {
-			newVer = parseVersionLabel(line, "new|latest|next")
+			newVer = parseVersionLabel(line, versionLabelNewRE)
 		}
 		if oldVer != "" && newVer != "" {
 			return oldVer, newVer
@@ -142,8 +144,7 @@ func parseVersionFromTo(line, pkg string) (string, string, bool) {
 	return match[1], match[2], true
 }
 
-func parseVersionLabel(line, labelPattern string) string {
-	re := regexp.MustCompile(`(?i)(?:` + labelPattern + `)\s*version\s*[:=]\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+func parseVersionLabel(line string, re *regexp.Regexp) string {
 	match := re.FindStringSubmatch(line)
 	if len(match) < 2 {
 		return ""

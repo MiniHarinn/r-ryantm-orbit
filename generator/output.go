@@ -129,7 +129,7 @@ func ensureDir(path string) error {
 func buildMeta(entries []LogEntry, chunkSize int) map[string]any {
 	statusCounts := make(map[string]int)
 	for _, entry := range entries {
-		key := strconv.Itoa(entry.Status)
+		key := strconv.Itoa(int(entry.Status))
 		statusCounts[key]++
 	}
 

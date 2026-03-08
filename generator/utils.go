@@ -15,15 +15,17 @@ func logf(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "log: "+format+"\n", args...)
 }
 
+type Status int
+
 const (
-	StatusFailed         = 0
-	StatusSuccess        = 1
-	StatusOptedOut       = 2
-	StatusAlreadyUpdated = 3
-	StatusUnknown        = -1
+	StatusFailed         Status = 0
+	StatusSuccess        Status = 1
+	StatusOptedOut       Status = 2
+	StatusAlreadyUpdated Status = 3
+	StatusUnknown        Status = -1
 )
 
-func statusEnum(status string) int {
+func statusEnum(status string) Status {
 	switch status {
 	case "success":
 		return StatusSuccess
