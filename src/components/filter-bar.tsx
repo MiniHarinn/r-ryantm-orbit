@@ -55,7 +55,7 @@ export function FilterBar() {
           </label>
           <div className="mt-2">
             <Select defaultValue="date_desc">
-              <SelectTrigger className="w-full lg:w-[220px]">
+              <SelectTrigger className="w-full lg:w-55">
                 <SelectValue placeholder="Newest first" />
               </SelectTrigger>
               <SelectContent>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import FleetOverview from "@/components/fleet-overview.astro"
 import { FilterBar } from "@/components/filter-bar"
 import { PackageCards } from "@/components/package-cards"
+import GithubPill from "@/components/github-pill.astro"
 ---
 
 <Layout>
@@ -19,6 +20,10 @@ import { PackageCards } from "@/components/package-cards"
         <p class="text-base text-muted-foreground sm:text-lg">
           Track nixpkgs-update runs in one place.
         </p>
+        <div class="flex flex-wrap gap-3 pt-1 text-xs">
+          <GithubPill author="NixOS" repo="nixpkgs" />
+          <GithubPill author="MiniHarinn" repo="r-ryantm-orbit" />
+        </div>
         <div class="flex flex-wrap gap-3 pt-2">
           <Button client:load size="sm">View latest runs</Button>
           <Button client:load variant="outline" size="sm">Open logs</Button>
