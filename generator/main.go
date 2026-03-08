@@ -328,7 +328,7 @@ func dateToUnix(date string) int64 {
 }
 
 func writeOutput(baseDir string, entries []LogEntry) error {
-	const chunkSize = 100
+	const chunkSize = 512
 
 	searchIndexPath := filepath.Join(baseDir, "search-index.json")
 	lookupDir := filepath.Join(baseDir, "lookup")
