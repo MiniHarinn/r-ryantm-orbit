@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	updateInfoRE   = regexp.MustCompile(`UPDATE_INFO:\s+\S+\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*->\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
-	versionArrowRE = regexp.MustCompile(`(?i)([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*(?:->|=>|→)\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
-	versionFromToRE = regexp.MustCompile(`(?i)from\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s+to\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+	updateInfoRE      = regexp.MustCompile(`UPDATE_INFO:\s+\S+\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*->\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+	versionArrowRE    = regexp.MustCompile(`(?i)([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*(?:->|=>|→)\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+	versionFromToRE   = regexp.MustCompile(`(?i)from\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s+to\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
 	versionLabelOldRE = regexp.MustCompile(`(?i)(?:current|old|previous)\s*version\s*[:=]\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
 	versionLabelNewRE = regexp.MustCompile(`(?i)(?:new|latest|next)\s*version\s*[:=]\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
 )
