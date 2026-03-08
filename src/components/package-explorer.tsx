@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { FilterBar } from "@/components/filter-bar"
 import { PackageCards } from "@/components/package-cards"
 import { type PackageFilters } from "@/lib/package-types"
@@ -11,6 +11,15 @@ const defaultFilters: PackageFilters = {
 
 export function PackageExplorer() {
   const [filters, setFilters] = useState<PackageFilters>(defaultFilters)
+  const prevStatusRef = useRef<PackageFilters["status"]>(defaultFilters.status)
+
+  useEffect(() => {
+    const prevStatus = prevStatusRef.current
+    prevStatusRef.current = filters.status
+    if (filters.status === "all" && prevStatus !== "all") {
+      window.scrollTo(0, 0)
+    }
+  }, [filters.status])
 
   return (
     <>

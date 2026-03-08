@@ -31,7 +31,8 @@ export const usePackagePaging = ({
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const sentinelIntersectingRef = useRef(false)
   const autoFillRef = useRef(false)
-  const observerDrainRef = useRef(false)
+  const resetPendingRef = useRef(false)
+  const prevStatusRef = useRef<PackageFilters["status"]>(filters.status)
 
   const setLoadingState = (value: boolean) => {
     isLoadingRef.current = value
@@ -136,6 +137,8 @@ export const usePackagePaging = ({
     browseChunkRef.current = 1
     setHasMoreState(true)
     setLoadError(null)
+    resetPendingRef.current = false
+    prevStatusRef.current = filters.status
     void loadBrowseChunk()
   }, [filters.sort, isSearchMode, loadBrowseChunk])
 
@@ -153,18 +156,30 @@ export const usePackagePaging = ({
     void loadSearchPage()
   }, [isSearchMode, searchResults, loadSearchPage])
 
-  const loadWhileIntersecting = useCallback(async () => {
-    if (observerDrainRef.current) return
-    observerDrainRef.current = true
-    try {
-      while (hasMoreRef.current && !isLoadingRef.current && sentinelIntersectingRef.current) {
-        const loaded = await loadBrowseChunk()
-        if (!loaded) break
+  useEffect(() => {
+    if (isSearchMode) return
+
+    const prevStatus = prevStatusRef.current
+    if (filters.status === "all" && prevStatus !== "all") {
+      prevStatusRef.current = filters.status
+      resetPendingRef.current = true
+      sentinelIntersectingRef.current = false
+
+      setBrowsePackages([])
+      browseChunkRef.current = 1
+      setHasMoreState(true)
+      setLoadError(null)
+
+      const run = async () => {
+        await loadBrowseChunk()
+        resetPendingRef.current = false
       }
-    } finally {
-      observerDrainRef.current = false
+      void run()
+      return
     }
-  }, [loadBrowseChunk])
+
+    prevStatusRef.current = filters.status
+  }, [filters.status, isSearchMode, loadBrowseChunk])
 
   useEffect(() => {
     const node = sentinelRef.current
@@ -177,10 +192,11 @@ export const usePackagePaging = ({
         if (!entry) return
         sentinelIntersectingRef.current = entry.isIntersecting
         if (!entry.isIntersecting) return
+        if (resetPendingRef.current) return
         if (isSearchMode) {
           void loadSearchPage()
         } else {
-          void loadWhileIntersecting()
+          void loadBrowseChunk()
         }
       },
       { rootMargin: "200px" }
@@ -188,7 +204,7 @@ export const usePackagePaging = ({
 
     observer.observe(node)
     return () => observer.disconnect()
-  }, [hasMore, isSearchMode, loadSearchPage, loadWhileIntersecting])
+  }, [hasMore, isSearchMode, loadBrowseChunk, loadSearchPage])
 
   const visiblePackages = useMemo(() => {
     const source = isSearchMode ? searchPackages : browsePackages
