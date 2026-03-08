@@ -2,7 +2,7 @@
 dist/
 
 # generator output
-generator/output/
+generator/generator-output/
 public/data
 src/data/*
 
