@@ -7,6 +7,7 @@ import {
   IconExternalLink,
   IconLoader2,
   IconConfetti,
+  IconZoomCancel,
 } from "@tabler/icons-react"
 import { STATUS_META, type PackageFilters } from "@/lib/package-types"
 import {
@@ -139,7 +140,10 @@ export function PackageCards({ filters }: PackageCardsProps) {
 
       {!activeError && !isLoading && visiblePackages.length === 0 ? (
         <div className="rounded-2xl border bg-card px-4 py-6 text-sm text-muted-foreground">
-          {isSearchMode ? "No results match your search yet." : "No packages to display."}
+          <span className="inline-flex items-center gap-2">
+            <IconZoomCancel className="size-4" />
+            {isSearchMode ? "No results match your search yet." : "No packages to display."}
+          </span>
         </div>
       ) : null}
 
