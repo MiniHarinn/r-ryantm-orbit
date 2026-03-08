@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "astro-app",
+      "name": "r-ryantm-orbit",
       "dependencies": {
         "@astrojs/react": "^4.4.2",
         "@fontsource-variable/noto-sans": "^5.2.10",
