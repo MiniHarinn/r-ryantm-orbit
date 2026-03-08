@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { IconSearch, IconFilter, IconSortAscending } from "@tabler/icons-react"
+import { IconSearch, IconFilter, IconSortAscending, IconX } from "@tabler/icons-react"
 import { SORT_OPTIONS, STATUS_FILTERS, STATUS_META, type PackageFilters } from "@/lib/package-types"
 
 type FilterBarProps = {
@@ -18,6 +18,7 @@ type FilterBarProps = {
 
 export function FilterBar({ value, onChange }: FilterBarProps) {
   const [queryDraft, setQueryDraft] = useState(value.query)
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     setQueryDraft(value.query)
@@ -40,12 +41,27 @@ export function FilterBar({ value, onChange }: FilterBarProps) {
             <IconSearch className="size-4" />
             Search
           </label>
-          <div className="mt-2">
+          <div className="mt-2 relative">
             <Input
+              ref={inputRef}
               placeholder="Package name"
               value={queryDraft}
               onChange={(event) => setQueryDraft(event.target.value)}
             />
+            {queryDraft.trim().length > 0 ? (
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-6 w-6 items-center justify-center rounded-full border border-border/60 bg-background/70 text-xs text-muted-foreground shadow-sm transition hover:bg-muted/60 hover:text-foreground"
+                onClick={() => {
+                  setQueryDraft("")
+                  onChange({ ...value, query: "" })
+                  inputRef.current?.focus()
+                }}
+                aria-label="Clear search"
+              >
+                <IconX className="size-3.5" />
+              </button>
+            ) : null}
           </div>
         </div>
 
