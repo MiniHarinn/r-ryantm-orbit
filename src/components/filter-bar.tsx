@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
@@ -16,6 +17,21 @@ type FilterBarProps = {
 }
 
 export function FilterBar({ value, onChange }: FilterBarProps) {
+  const [queryDraft, setQueryDraft] = useState(value.query)
+
+  useEffect(() => {
+    setQueryDraft(value.query)
+  }, [value.query])
+
+  useEffect(() => {
+    if (queryDraft === value.query) return
+    const timer = setTimeout(() => {
+      onChange({ ...value, query: queryDraft })
+    }, 200)
+
+    return () => clearTimeout(timer)
+  }, [onChange, queryDraft, value])
+
   return (
     <section className="rounded-3xl border bg-card p-5 text-card-foreground shadow-sm">
       <div className="grid gap-4 lg:grid-cols-[2fr_1.6fr_0.9fr] lg:items-start">
@@ -27,8 +43,8 @@ export function FilterBar({ value, onChange }: FilterBarProps) {
           <div className="mt-2">
             <Input
               placeholder="Package name"
-              value={value.query}
-              onChange={(event) => onChange({ ...value, query: event.target.value })}
+              value={queryDraft}
+              onChange={(event) => setQueryDraft(event.target.value)}
             />
           </div>
         </div>
