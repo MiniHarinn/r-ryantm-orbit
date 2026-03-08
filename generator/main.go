@@ -345,9 +345,10 @@ func writeOutput(baseDir string, entries []LogEntry) error {
 	lookupRows := make([][]any, 0, len(entries))
 
 	for i, entry := range entries {
-		lookupChunk := (i / chunkSize) + 1
+		lookupChunk := (len(lookupRows) / chunkSize) + 1
+		errorValue := errorField(entry.Error)
 		searchIndexRows = append(searchIndexRows, []any{entry.ID, entry.Package, entry.Status, entry.Date, lookupChunk})
-		lookupRows = append(lookupRows, []any{entry.ID, entry.Package, entry.Status, entry.Date, entry.Error})
+		lookupRows = append(lookupRows, []any{entry.ID, entry.Package, entry.Status, entry.Date, errorValue})
 	}
 
 	if err := writeChunks(lookupDir, lookupRows, chunkSize); err != nil {
@@ -357,8 +358,7 @@ func writeOutput(baseDir string, entries []LogEntry) error {
 		return err
 	}
 
-	dateSorted := make([]LogEntry, len(entries))
-	copy(dateSorted, entries)
+	dateSorted := append([]LogEntry(nil), entries...)
 	sort.Slice(dateSorted, func(i, j int) bool {
 		if dateSorted[i].Date == dateSorted[j].Date {
 			return dateSorted[i].Package < dateSorted[j].Package
@@ -366,8 +366,7 @@ func writeOutput(baseDir string, entries []LogEntry) error {
 		return dateSorted[i].Date > dateSorted[j].Date
 	})
 
-	nameSorted := make([]LogEntry, len(entries))
-	copy(nameSorted, entries)
+	nameSorted := append([]LogEntry(nil), entries...)
 	sort.Slice(nameSorted, func(i, j int) bool {
 		if nameSorted[i].Package == nameSorted[j].Package {
 			return nameSorted[i].Date > nameSorted[j].Date
@@ -392,9 +391,16 @@ func logf(format string, args ...any) {
 func writeBrowseChunks(dir string, entries []LogEntry, chunkSize int) error {
 	rows := make([][]any, 0, len(entries))
 	for _, entry := range entries {
-		rows = append(rows, []any{entry.ID, entry.Package, entry.Status, entry.Date, entry.Error})
+		rows = append(rows, []any{entry.ID, entry.Package, entry.Status, entry.Date, errorField(entry.Error)})
 	}
 	return writeChunks(dir, rows, chunkSize)
+}
+
+func errorField(value string) any {
+	if value == "" {
+		return nil
+	}
+	return value
 }
 
 func writeChunks(dir string, rows [][]any, chunkSize int) error {
