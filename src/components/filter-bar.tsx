@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { IconAdjustments, IconSearch, IconFilter, IconSortAscending } from "@tabler/icons-react"
 
 export function FilterBar() {
   const statuses = [
@@ -24,7 +25,8 @@ export function FilterBar() {
     <section className="rounded-3xl border bg-card p-5 text-card-foreground shadow-sm">
       <div className="grid gap-4 lg:grid-cols-[2fr_1.6fr_0.9fr] lg:items-start">
         <div className="flex flex-col">
-          <label className="h-4 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          <label className="inline-flex h-4 items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            <IconSearch className="size-4" />
             Search
           </label>
           <div className="mt-2">
@@ -33,7 +35,8 @@ export function FilterBar() {
         </div>
 
         <div className="flex flex-col">
-          <label className="h-4 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          <label className="inline-flex h-4 items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            <IconFilter className="size-4" />
             Status
           </label>
           <div className="mt-2 flex min-h-9 flex-wrap items-center gap-2">
@@ -50,7 +53,8 @@ export function FilterBar() {
         </div>
 
         <div className="flex flex-col lg:justify-self-end">
-          <label className="h-4 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          <label className="inline-flex h-4 items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            <IconSortAscending className="size-4" />
             Sort
           </label>
           <div className="mt-2">

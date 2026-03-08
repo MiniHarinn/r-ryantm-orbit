@@ -1,5 +1,11 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  IconCalendar,
+  IconArrowRight,
+  IconNotes,
+  IconExternalLink,
+} from "@tabler/icons-react"
 
 type PackageStatus = "Completed" | "Failed" | "Opted out" | "Unknown"
 
@@ -180,7 +186,10 @@ export function PackageCards() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <h3 className="text-base font-semibold">{entry.name}</h3>
-              <p className="text-xs text-muted-foreground">{entry.date}</p>
+              <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                <IconCalendar className="size-3.5" />
+                {entry.date}
+              </p>
             </div>
             <Badge
               variant="outline"
@@ -195,8 +204,10 @@ export function PackageCards() {
               Version change
             </p>
             {entry.oldVersion && entry.newVersion ? (
-              <p className="mt-1 text-sm font-semibold">
-                {entry.oldVersion} → {entry.newVersion}
+              <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold">
+                {entry.oldVersion}
+                <IconArrowRight className="size-4 text-muted-foreground" />
+                {entry.newVersion}
               </p>
             ) : (
               <p className="mt-1 text-sm text-muted-foreground">
@@ -212,10 +223,12 @@ export function PackageCards() {
           ) : null}
 
           <div className="mt-auto flex flex-wrap gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="gap-2">
+              <IconNotes className="size-4" />
               View log
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="gap-2">
+              <IconExternalLink className="size-4" />
               Nix Search
             </Button>
           </div>

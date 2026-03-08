@@ -1,4 +1,6 @@
 ---
+import { IconBrandGithub, IconStarFilled } from "@tabler/icons-react"
+
 type GithubPillProps = {
   author: string
   repo: string
@@ -26,13 +28,17 @@ try {
 }
 ---
 
-<a
-  href={`https://github.com/${author}/${repo}`}
-  target="_blank"
-  rel="noopener"
-  class="inline-flex h-8 items-center gap-2 rounded-full border border-border/60 bg-background/40 px-3 text-xs text-foreground shadow-sm transition hover:bg-muted/60"
->
-  <span class="text-muted-foreground">GitHub</span>
-  <span class="text-foreground">{repo}</span>
-  <span class="text-amber-300">★ {stars ?? "—"}</span>
-</a>
+  <a
+    href={`https://github.com/${author}/${repo}`}
+    target="_blank"
+    rel="noopener"
+    class="inline-flex h-8 items-center gap-2 rounded-full border border-border/60 bg-background/40 px-3 text-xs text-foreground shadow-sm transition hover:bg-muted/60"
+  >
+    <IconBrandGithub className="size-4 text-muted-foreground" />
+    <span class="text-muted-foreground">GitHub</span>
+    <span class="text-foreground">{repo}</span>
+    <span class="inline-flex items-center gap-1 text-amber-300">
+      <IconStarFilled className="size-3" />
+      {stars ?? "—"}
+    </span>
+  </a>

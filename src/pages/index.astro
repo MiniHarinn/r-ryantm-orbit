@@ -5,12 +5,16 @@ import FleetOverview from "@/components/fleet-overview.astro"
 import { FilterBar } from "@/components/filter-bar"
 import { PackageCards } from "@/components/package-cards"
 import GithubPill from "@/components/github-pill.astro"
+import { IconPlanet } from "@tabler/icons-react"
 ---
 
 <Layout>
   <section class="mx-auto w-full max-w-6xl px-6 py-10">
     <div class="pb-6">
-      <p class="text-xs uppercase tracking-[0.3em] text-muted-foreground">r-ryantm orbit</p>
+      <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+        <IconPlanet className="size-4" />
+        r-ryantm orbit
+      </p>
     </div>
     <div class="grid items-start gap-8 lg:grid-cols-[1fr_1.1fr]">
       <div class="flex max-w-2xl flex-col gap-6">
