@@ -34,7 +34,7 @@ export function FilterBar({ value, onChange }: FilterBarProps) {
   }, [onChange, queryDraft, value])
 
   return (
-    <section className="w-full rounded-3xl border bg-card p-5 text-card-foreground shadow-sm">
+    <section className="w-full rounded-2xl border bg-card p-5 text-card-foreground shadow-sm">
       <div className="grid gap-4 lg:grid-cols-[2fr_1.6fr_0.9fr] lg:items-start">
         <div className="flex flex-col">
           <label className="inline-flex h-4 items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
