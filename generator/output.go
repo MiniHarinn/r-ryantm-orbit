@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -14,6 +16,7 @@ func writeOutput(baseDir string, entries []LogEntry) error {
 	const chunkSize = 512
 
 	searchIndexPath := filepath.Join(baseDir, "search-index.json")
+	metaPath := filepath.Join(baseDir, "meta.json")
 	lookupDir := filepath.Join(baseDir, "lookup")
 	browseDateDir := filepath.Join(baseDir, "browse", "date-desc")
 	browseDateAscDir := filepath.Join(baseDir, "browse", "date-asc")
@@ -40,6 +43,9 @@ func writeOutput(baseDir string, entries []LogEntry) error {
 		return err
 	}
 	if err := writeJSON(searchIndexPath, searchIndexRows); err != nil {
+		return err
+	}
+	if err := writeJSON(metaPath, buildMeta(entries, chunkSize)); err != nil {
 		return err
 	}
 
@@ -137,6 +143,21 @@ func ensureDir(path string) error {
 		return nil
 	}
 	return os.MkdirAll(path, 0o755)
+}
+
+func buildMeta(entries []LogEntry, chunkSize int) map[string]any {
+	statusCounts := make(map[string]int)
+	for _, entry := range entries {
+		key := strconv.Itoa(entry.Status)
+		statusCounts[key]++
+	}
+
+	return map[string]any{
+		"generated_at": time.Now().UTC().Format(time.RFC3339),
+		"chunk_size":   chunkSize,
+		"total":        len(entries),
+		"status":       statusCounts,
+	}
 }
 
 func comparePackageName(a, b string) int {

@@ -4,6 +4,33 @@ import FleetOverview from "@/components/fleet-overview.astro"
 import { PackageExplorer } from "@/components/package-explorer"
 import GithubPill from "@/components/github-pill.astro"
 import { IconPlanet } from "@tabler/icons-react"
+import { readFile } from "node:fs/promises"
+
+type MetaStats = {
+  generated_at: string
+  chunk_size: number
+  total: number
+  status: Record<string, number>
+}
+
+const formatCount = (value: number) => value.toLocaleString("en-US")
+const formatUpdatedAt = (value: string) => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`
+}
+
+const metaPath = new URL("../../public/data/meta.json", import.meta.url)
+const raw = await readFile(metaPath, "utf-8")
+const meta = JSON.parse(raw) as MetaStats
+const status = meta.status ?? {}
+const fleetStats = {
+  total: formatCount(meta.total ?? 0),
+  completed: formatCount(status["1"] ?? 0),
+  failed: formatCount(status["0"] ?? 0),
+  optedOut: formatCount(status["2"] ?? 0),
+  updatedAt: formatUpdatedAt(meta.generated_at ?? ""),
+}
 ---
 
 <Layout>
@@ -28,7 +55,7 @@ import { IconPlanet } from "@tabler/icons-react"
         </div>
       </div>
 
-      <FleetOverview />
+      <FleetOverview {...fleetStats} />
     </div>
   </section>
 

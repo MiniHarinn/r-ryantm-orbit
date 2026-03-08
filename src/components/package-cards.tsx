@@ -29,7 +29,7 @@ const PackageCard = ({ entry }: { entry: PackageEntry }) => {
     <article className="flex h-full flex-col gap-3 rounded-3xl border bg-card p-4 text-card-foreground shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="break-words text-base font-semibold">{entry.name}</h3>
+          <h3 className="wrap-break-word text-base font-semibold">{entry.name}</h3>
           <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
             <IconCalendar className="size-3.5" />
             {formatDate(entry.date)}
