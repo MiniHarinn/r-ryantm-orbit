@@ -30,10 +30,15 @@ export const usePackagePaging = ({
   const lookupCacheRef = useRef(new Map<number, PackageEntry[]>())
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const sentinelIntersectingRef = useRef(false)
-  const autoFillRef = useRef(false)
-  const observerDrainRef = useRef(false)
-  const resetPendingRef = useRef(false)
-  const prevStatusRef = useRef<PackageFilters["status"]>(filters.status)
+  const userScrolledRef = useRef(false)
+  const drainInProgressRef = useRef(false)
+  const browseKeyRef = useRef<string | null>(null)
+
+  const browseKey = `${filters.sort}:${filters.status}`
+  const browseResetPending = !isSearchMode && browseKeyRef.current !== browseKey
+  if (browseResetPending) {
+    browseKeyRef.current = browseKey
+  }
 
   const setLoadingState = (value: boolean) => {
     isLoadingRef.current = value
@@ -138,10 +143,9 @@ export const usePackagePaging = ({
     browseChunkRef.current = 1
     setHasMoreState(true)
     setLoadError(null)
-    resetPendingRef.current = false
-    prevStatusRef.current = filters.status
+    userScrolledRef.current = false
     void loadBrowseChunk()
-  }, [filters.sort, isSearchMode, loadBrowseChunk])
+  }, [filters.sort, filters.status, isSearchMode, loadBrowseChunk])
 
   useEffect(() => {
     if (!isSearchMode) return
@@ -149,73 +153,55 @@ export const usePackagePaging = ({
     searchCursorRef.current = 0
     setHasMoreState(searchResults.length > 0)
     setLoadError(null)
-  }, [isSearchMode, searchResults])
-
-  useEffect(() => {
-    if (!isSearchMode) return
-    if (searchResults.length === 0) return
-    void loadSearchPage()
+    userScrolledRef.current = false
+    if (searchResults.length > 0) {
+      void loadSearchPage()
+    }
   }, [isSearchMode, searchResults, loadSearchPage])
 
-  const loadWhileIntersecting = useCallback(async () => {
-    if (observerDrainRef.current) return
-    observerDrainRef.current = true
+  const isSentinelInView = useCallback(() => {
+    const node = sentinelRef.current
+    if (!node) return false
+    const rect = node.getBoundingClientRect()
+    return rect.top <= window.innerHeight + 200
+  }, [])
+
+  const drainBrowseWhileInView = useCallback(async () => {
+    if (drainInProgressRef.current) return
+    drainInProgressRef.current = true
     try {
+      let cycles = 0
       while (
+        cycles < 3 &&
+        userScrolledRef.current &&
         hasMoreRef.current &&
         !isLoadingRef.current &&
-        sentinelIntersectingRef.current &&
-        !resetPendingRef.current
+        isSentinelInView()
       ) {
+        cycles += 1
         const loaded = await loadBrowseChunk()
         if (!loaded) break
       }
     } finally {
-      observerDrainRef.current = false
+      drainInProgressRef.current = false
     }
-  }, [loadBrowseChunk])
-
-  useEffect(() => {
-    if (isSearchMode) return
-
-    const prevStatus = prevStatusRef.current
-    if (filters.status === "all" && prevStatus !== "all") {
-      prevStatusRef.current = filters.status
-      resetPendingRef.current = true
-      sentinelIntersectingRef.current = false
-
-      setBrowsePackages([])
-      browseChunkRef.current = 1
-      setHasMoreState(true)
-      setLoadError(null)
-
-      const run = async () => {
-        await loadBrowseChunk()
-        resetPendingRef.current = false
-      }
-      void run()
-      return
-    }
-
-    prevStatusRef.current = filters.status
-  }, [filters.status, isSearchMode, loadBrowseChunk])
+  }, [isSentinelInView, loadBrowseChunk])
 
   useEffect(() => {
     const node = sentinelRef.current
     if (!node) return
-    if (!hasMore) return
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const entry = entries[0]
-        if (!entry) return
-        sentinelIntersectingRef.current = entry.isIntersecting
-        if (!entry.isIntersecting) return
-        if (resetPendingRef.current) return
+        const isIntersecting = entries[0]?.isIntersecting ?? false
+        sentinelIntersectingRef.current = isIntersecting
+        if (!isIntersecting) return
+        if (!userScrolledRef.current) return
+        if (!hasMoreRef.current || isLoadingRef.current) return
         if (isSearchMode) {
           void loadSearchPage()
         } else {
-          void loadWhileIntersecting()
+          void drainBrowseWhileInView()
         }
       },
       { rootMargin: "200px" }
@@ -223,9 +209,75 @@ export const usePackagePaging = ({
 
     observer.observe(node)
     return () => observer.disconnect()
-  }, [hasMore, isSearchMode, loadSearchPage, loadWhileIntersecting])
+  }, [drainBrowseWhileInView, isSearchMode, loadSearchPage])
+
+  useEffect(() => {
+    let rafId: number | null = null
+
+    const scheduleCheck = () => {
+      if (rafId !== null) return
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null
+        if (!userScrolledRef.current) return
+        if (!hasMoreRef.current || isLoadingRef.current) return
+
+        const inView = sentinelIntersectingRef.current || isSentinelInView()
+        if (!inView) return
+
+        if (isSearchMode) {
+          void loadSearchPage()
+        } else {
+          void drainBrowseWhileInView()
+        }
+      })
+    }
+
+    const markUserIntent = () => {
+      if (!userScrolledRef.current) {
+        userScrolledRef.current = true
+      }
+      scheduleCheck()
+    }
+
+    const onScroll = () => {
+      if (!userScrolledRef.current) return
+      scheduleCheck()
+    }
+
+    const onKeydown = (event: KeyboardEvent) => {
+      const keys = [
+        "ArrowDown",
+        "ArrowUp",
+        "PageDown",
+        "PageUp",
+        "Home",
+        "End",
+        " ",
+      ]
+      if (keys.includes(event.key)) {
+        markUserIntent()
+      }
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true })
+    window.addEventListener("wheel", markUserIntent, { passive: true })
+    window.addEventListener("touchmove", markUserIntent, { passive: true })
+    window.addEventListener("keydown", onKeydown)
+    window.addEventListener("resize", scheduleCheck)
+    return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId)
+      }
+      window.removeEventListener("scroll", onScroll)
+      window.removeEventListener("wheel", markUserIntent)
+      window.removeEventListener("touchmove", markUserIntent)
+      window.removeEventListener("keydown", onKeydown)
+      window.removeEventListener("resize", scheduleCheck)
+    }
+  }, [drainBrowseWhileInView, isSearchMode, isSentinelInView, loadSearchPage])
 
   const visiblePackages = useMemo(() => {
+    if (browseResetPending) return []
     const source = isSearchMode ? searchPackages : browsePackages
     const filtered =
       filters.status === "all"
@@ -234,37 +286,13 @@ export const usePackagePaging = ({
     return isSearchMode ? sortPackages(filtered, filters.sort) : filtered
   }, [browsePackages, filters.sort, filters.status, isSearchMode, searchPackages])
 
-  const runAutoFill = useCallback(() => {
+  useEffect(() => {
     if (isSearchMode) return
     if (filters.status === "all") return
-    if (autoFillRef.current) return
     if (visiblePackages.length >= MIN_FILTERED_VISIBLE) return
-
-    let cancelled = false
-    const run = async () => {
-      autoFillRef.current = true
-      try {
-        while (
-          !cancelled &&
-          hasMoreRef.current &&
-          !isLoadingRef.current &&
-          visiblePackages.length < MIN_FILTERED_VISIBLE
-        ) {
-          const loaded = await loadBrowseChunk()
-          if (!loaded) break
-        }
-      } finally {
-        autoFillRef.current = false
-      }
-    }
-
-    void run()
-    return () => {
-      cancelled = true
-    }
-  }, [filters.status, isSearchMode, loadBrowseChunk, visiblePackages.length])
-
-  useEffect(() => runAutoFill(), [runAutoFill])
+    if (!hasMoreRef.current || isLoadingRef.current) return
+    void loadBrowseChunk()
+  }, [filters.status, isSearchMode, loadBrowseChunk, visiblePackages.length, hasMore, isLoading])
 
   return {
     visiblePackages,
