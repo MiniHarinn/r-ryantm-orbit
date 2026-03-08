@@ -1,7 +1,7 @@
 export type PackageFilters = {
   query: string
   status: number | "all"
-  sort: "date-desc" | "name-asc"
+  sort: "date-desc" | "name-asc" | "date-asc" | "name-desc"
 }
 
 export type StatusMeta = {
@@ -30,5 +30,7 @@ export const STATUS_FILTERS: Array<{ value: PackageFilters["status"]; label: str
 export const SORT_OPTIONS: Array<{ value: PackageFilters["sort"]; label: string }> =
   [
     { value: "date-desc", label: "Newest first" },
+    { value: "date-asc", label: "Oldest first" },
     { value: "name-asc", label: "A to Z" },
+    { value: "name-desc", label: "Z to A" },
   ]
