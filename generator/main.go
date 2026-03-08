@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
@@ -23,12 +24,14 @@ type LogEntry struct {
 	Package string
 	Date    int64
 	Status  int
+	OldVer  string
+	NewVer  string
 	Error   string
 }
 
 func main() {
 	baseURL := "https://nixpkgs-update-logs.nix-community.org/"
-	outDir := "../output"
+	outDir := "./output"
 	timeout := 45 * time.Second
 	workers := runtime.NumCPU() * 6
 
@@ -112,10 +115,15 @@ func fetchEntriesConcurrent(client *http.Client, baseURL string, packages []stri
 					Package: j.packageName,
 					Date:    dateToUnix(latest),
 					Status:  statusEnum("unknown"),
+					OldVer:  "",
+					NewVer:  "",
 					Error:   "",
 				}
 				if err == nil {
 					text := string(body)
+					oldVer, newVer := deriveVersions(text, j.packageName)
+					entry.OldVer = oldVer
+					entry.NewVer = newVer
 					entry.Status = statusEnum(deriveStatus(text))
 					if entry.Status == statusEnum("failed") {
 						entry.Error = deriveError(strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n"))
@@ -252,6 +260,107 @@ func deriveError(lines []string) string {
 	return ""
 }
 
+func deriveVersions(text, pkg string) (string, string) {
+	lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
+	for _, line := range lines {
+		oldVer, newVer, ok := parseUpdateInfo(line)
+		if ok {
+			return oldVer, newVer
+		}
+		oldVer, newVer, ok = parseVersionFromTo(line, pkg)
+		if ok {
+			return oldVer, newVer
+		}
+		oldVer, newVer, ok = parseVersionArrow(line, pkg)
+		if ok {
+			return oldVer, newVer
+		}
+	}
+
+	var oldVer string
+	var newVer string
+	for _, line := range lines {
+		if oldVer == "" {
+			oldVer = parseVersionLabel(line, "current|old|previous")
+		}
+		if newVer == "" {
+			newVer = parseVersionLabel(line, "new|latest|next")
+		}
+		if oldVer != "" && newVer != "" {
+			return oldVer, newVer
+		}
+	}
+
+	return "", ""
+}
+
+func parseUpdateInfo(line string) (string, string, bool) {
+	if !strings.Contains(line, "UPDATE_INFO:") {
+		return "", "", false
+	}
+	re := regexp.MustCompile(`UPDATE_INFO:\s+\S+\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*->\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+	match := re.FindStringSubmatch(line)
+	if len(match) < 3 {
+		return "", "", false
+	}
+	if strings.Contains(match[1], "/") || strings.Contains(match[2], "/") {
+		return "", "", false
+	}
+	return match[1], match[2], true
+}
+
+func parseVersionArrow(line, pkg string) (string, string, bool) {
+	lower := strings.ToLower(line)
+	if !strings.Contains(lower, "->") && !strings.Contains(lower, "=>") {
+		return "", "", false
+	}
+	if pkg != "" && !strings.Contains(lower, strings.ToLower(pkg)) && !strings.Contains(lower, "version") {
+		return "", "", false
+	}
+
+	re := regexp.MustCompile(`(?i)([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*(?:->|=>|→)\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+	match := re.FindStringSubmatch(line)
+	if len(match) < 3 {
+		return "", "", false
+	}
+	if strings.Contains(match[1], "/") || strings.Contains(match[2], "/") {
+		return "", "", false
+	}
+	return match[1], match[2], true
+}
+
+func parseVersionFromTo(line, pkg string) (string, string, bool) {
+	lower := strings.ToLower(line)
+	if !strings.Contains(lower, "from") || !strings.Contains(lower, "to") {
+		return "", "", false
+	}
+	if pkg != "" && !strings.Contains(lower, strings.ToLower(pkg)) && !strings.Contains(lower, "version") {
+		return "", "", false
+	}
+
+	re := regexp.MustCompile(`(?i)from\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s+to\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+	match := re.FindStringSubmatch(line)
+	if len(match) < 3 {
+		return "", "", false
+	}
+	if strings.Contains(match[1], "/") || strings.Contains(match[2], "/") {
+		return "", "", false
+	}
+	return match[1], match[2], true
+}
+
+func parseVersionLabel(line, labelPattern string) string {
+	re := regexp.MustCompile(`(?i)(?:` + labelPattern + `)\s*version\s*[:=]\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+	match := re.FindStringSubmatch(line)
+	if len(match) < 2 {
+		return ""
+	}
+	if strings.Contains(match[1], "/") {
+		return ""
+	}
+	return match[1]
+}
+
 func fetch(client *http.Client, url string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -344,11 +453,11 @@ func writeOutput(baseDir string, entries []LogEntry) error {
 	searchIndexRows := make([][]any, 0, len(entries))
 	lookupRows := make([][]any, 0, len(entries))
 
-	for i, entry := range entries {
+	for _, entry := range entries {
 		lookupChunk := (len(lookupRows) / chunkSize) + 1
 		errorValue := errorField(entry.Error)
 		searchIndexRows = append(searchIndexRows, []any{entry.ID, entry.Package, entry.Status, entry.Date, lookupChunk})
-		lookupRows = append(lookupRows, []any{entry.ID, entry.Package, entry.Status, entry.Date, errorValue})
+		lookupRows = append(lookupRows, []any{entry.ID, entry.Package, entry.Status, entry.Date, entry.OldVer, entry.NewVer, errorValue})
 	}
 
 	if err := writeChunks(lookupDir, lookupRows, chunkSize); err != nil {
@@ -391,7 +500,7 @@ func logf(format string, args ...any) {
 func writeBrowseChunks(dir string, entries []LogEntry, chunkSize int) error {
 	rows := make([][]any, 0, len(entries))
 	for _, entry := range entries {
-		rows = append(rows, []any{entry.ID, entry.Package, entry.Status, entry.Date, errorField(entry.Error)})
+		rows = append(rows, []any{entry.ID, entry.Package, entry.Status, entry.Date, entry.OldVer, entry.NewVer, errorField(entry.Error)})
 	}
 	return writeChunks(dir, rows, chunkSize)
 }
