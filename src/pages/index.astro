@@ -13,20 +13,16 @@ import GithubPill from "@/components/github-pill.astro"
       <p class="text-xs uppercase tracking-[0.3em] text-muted-foreground">r-ryantm orbit</p>
     </div>
     <div class="grid items-start gap-8 lg:grid-cols-[1fr_1.1fr]">
-      <div class="flex max-w-2xl flex-col gap-4">
-        <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">
+      <div class="flex max-w-2xl flex-col gap-6">
+        <h1 class="text-4xl font-semibold tracking-tight sm:text-6xl">
           r-ryantm's package orbit.
         </h1>
-        <p class="text-base text-muted-foreground sm:text-lg">
+        <p class="text-base text-muted-foreground sm:text-xl">
           Track nixpkgs-update runs in one place.
         </p>
-        <div class="flex flex-wrap gap-3 pt-1 text-xs">
+        <div class="-mt-1 flex flex-wrap gap-3 text-xs">
           <GithubPill author="NixOS" repo="nixpkgs" />
           <GithubPill author="MiniHarinn" repo="r-ryantm-orbit" />
-        </div>
-        <div class="flex flex-wrap gap-3 pt-2">
-          <Button client:load size="sm">View latest runs</Button>
-          <Button client:load variant="outline" size="sm">Open logs</Button>
         </div>
       </div>
 

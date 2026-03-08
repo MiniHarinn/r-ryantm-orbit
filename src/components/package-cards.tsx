@@ -86,7 +86,7 @@ export function PackageCards() {
           </div>
 
           {entry.error ? (
-            <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
               {entry.error}
             </div>
           ) : null}
