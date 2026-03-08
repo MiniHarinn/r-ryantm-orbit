@@ -38,6 +38,10 @@
     --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
     --sidebar-border: oklch(0.92 0.004 286.32);
     --sidebar-ring: oklch(0.705 0.015 286.067);
+    --status-success: 16 185 129;
+    --status-error: 244 63 94;
+    --status-warning: 251 191 36;
+    --status-neutral: 148 163 184;
 }
 
 .dark {
@@ -72,6 +76,10 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.552 0.016 285.938);
+    --status-success: 16 185 129;
+    --status-error: 244 63 94;
+    --status-warning: 251 191 36;
+    --status-neutral: 148 163 184;
 }
 
 @theme inline {
@@ -126,4 +134,55 @@
   html {
     @apply font-sans;
     }
+}
+
+@layer utilities {
+  .status-success-text {
+    color: rgb(var(--status-success) / 1);
+  }
+
+  .status-success-border {
+    border-color: rgb(var(--status-success) / 0.4);
+  }
+
+  .status-success-bg {
+    background-color: rgb(var(--status-success) / 0.12);
+  }
+
+  .status-error-text {
+    color: rgb(var(--status-error) / 1);
+  }
+
+  .status-error-border {
+    border-color: rgb(var(--status-error) / 0.4);
+  }
+
+  .status-error-bg {
+    background-color: rgb(var(--status-error) / 0.12);
+  }
+
+  .status-warning-text {
+    color: rgb(var(--status-warning) / 1);
+  }
+
+  .status-warning-border {
+    border-color: rgb(var(--status-warning) / 0.4);
+  }
+
+  .status-warning-bg {
+    background-color: rgb(var(--status-warning) / 0.12);
+  }
+
+  .status-neutral-text {
+    color: rgb(var(--status-neutral) / 1);
+  }
+
+  .status-neutral-border {
+    border-color: rgb(var(--status-neutral) / 0.4);
+  }
+
+  .status-neutral-bg {
+    background-color: rgb(var(--status-neutral) / 0.12);
+  }
+
 }

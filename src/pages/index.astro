@@ -1,17 +1,39 @@
 ---
 import Layout from "@/layouts/main.astro"
 import { Button } from "@/components/ui/button"
+import FleetOverview from "@/components/fleet-overview.astro"
+import { FilterBar } from "@/components/filter-bar"
+import { PackageCards } from "@/components/package-cards"
 ---
 
 <Layout>
-  <div class="flex min-h-svh p-6">
-    <div class="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-      <div>
-        <h1 class="font-medium">Project ready!</h1>
-        <p>You may now add components and start building.</p>
-        <p>We've already added the button component for you.</p>
-        <Button client:load className="mt-2">Button</Button>
-      </div>
+  <section class="mx-auto w-full max-w-6xl px-6 py-10">
+    <div class="pb-6">
+      <p class="text-xs uppercase tracking-[0.3em] text-muted-foreground">r-ryantm orbit</p>
     </div>
-  </div>
+    <div class="grid items-start gap-8 lg:grid-cols-[1fr_1.1fr]">
+      <div class="flex max-w-2xl flex-col gap-4">
+        <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">
+          r-ryantm's package orbit.
+        </h1>
+        <p class="text-base text-muted-foreground sm:text-lg">
+          Track nixpkgs-update runs in one place.
+        </p>
+        <div class="flex flex-wrap gap-3 pt-2">
+          <Button client:load size="sm">View latest runs</Button>
+          <Button client:load variant="outline" size="sm">Open logs</Button>
+        </div>
+      </div>
+
+      <FleetOverview />
+    </div>
+  </section>
+
+  <section class="mx-auto w-full max-w-6xl px-6 pb-10">
+    <FilterBar client:load />
+  </section>
+
+  <section class="mx-auto w-full max-w-6xl px-6 pb-16">
+    <PackageCards client:load />
+  </section>
 </Layout>

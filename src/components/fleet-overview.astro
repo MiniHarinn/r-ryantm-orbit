@@ -1,0 +1,45 @@
+---
+export type FleetStats = {
+  total: string
+  completed: string
+  failed: string
+  optedOut: string
+  updatedAt: string
+}
+
+const {
+  total = "12,401",
+  completed = "10,982",
+  failed = "827",
+  optedOut = "592",
+  updatedAt = "2026-03-08 12:42 UTC",
+} = Astro.props as Partial<FleetStats>
+---
+
+<aside class="rounded-3xl border bg-card p-5 text-card-foreground shadow-sm">
+  <div class="flex flex-col gap-1">
+    <p class="text-xs uppercase tracking-[0.3em] text-muted-foreground">Status snapshot</p>
+    <h2 class="text-2xl font-semibold tracking-tight">Fleet overview</h2>
+  </div>
+  <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div class="rounded-2xl border bg-background p-4">
+      <p class="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Total</p>
+      <p class="mt-2 text-2xl font-semibold">{total}</p>
+    </div>
+    <div class="rounded-2xl border bg-background p-4">
+      <p class="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Completed</p>
+      <p class="mt-2 text-2xl font-semibold status-success-text">{completed}</p>
+    </div>
+    <div class="rounded-2xl border bg-background p-4">
+      <p class="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Failed</p>
+      <p class="mt-2 text-2xl font-semibold status-error-text">{failed}</p>
+    </div>
+    <div class="rounded-2xl border bg-background p-4">
+      <p class="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Opted out</p>
+      <p class="mt-2 text-2xl font-semibold status-warning-text">{optedOut}</p>
+    </div>
+  </div>
+  <div class="mt-6 rounded-2xl border bg-background px-4 py-3 text-xs text-muted-foreground">
+    Updated At: <span class="text-foreground">{updatedAt}</span>
+  </div>
+</aside>
