@@ -17,7 +17,10 @@ export function PackageExplorer() {
         <FilterBar value={filters} onChange={setFilters} />
       </section>
       <section className="mx-auto w-full max-w-none px-4 pb-16 sm:max-w-6xl sm:px-6">
-        <PackageCards filters={filters} />
+        <PackageCards
+          filters={filters}
+          onClearFilters={() => setFilters(defaultFilters)}
+        />
       </section>
     </>
   )

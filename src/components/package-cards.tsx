@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from "react"
 
 type PackageCardsProps = {
   filters: PackageFilters
+  onClearFilters: () => void
 }
 
 const statusFallback = STATUS_META[-1]
@@ -86,9 +87,13 @@ const PackageCard = ({ entry }: { entry: PackageEntry }) => {
   )
 }
 
-export function PackageCards({ filters }: PackageCardsProps) {
+export function PackageCards({ filters, onClearFilters }: PackageCardsProps) {
   const query = filters.query.trim()
   const isSearchMode = query.length > 0
+  const hasActiveFilters =
+    filters.query.trim().length > 0 ||
+    filters.status !== "all" ||
+    filters.sort !== "date-desc"
 
   const { searchResults, searchError } = usePackageSearch(query)
   const { visiblePackages, isLoading, hasMore, loadError, sentinelRef } =
@@ -140,10 +145,17 @@ export function PackageCards({ filters }: PackageCardsProps) {
 
       {!activeError && !isLoading && visiblePackages.length === 0 ? (
         <div className="rounded-2xl border bg-card px-4 py-6 text-sm text-muted-foreground">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="inline-flex items-center gap-2">
             <IconZoomCancel className="size-4" />
             {isSearchMode ? "No results match your search yet." : "No packages to display."}
           </span>
+          {hasActiveFilters ? (
+            <Button type="button" variant="outline" size="sm" onClick={onClearFilters}>
+              Clear filters
+            </Button>
+          ) : null}
+          </div>
         </div>
       ) : null}
 
