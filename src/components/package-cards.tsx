@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   IconCalendar,
+  IconArrowRight,
   IconNotes,
   IconExternalLink,
 } from "@tabler/icons-react"
@@ -14,11 +15,13 @@ type PackageEntry = {
   name: string
   status: number
   date: number
+  oldVersion?: string
+  newVersion?: string
   error: string | null
 }
 
 type SearchRow = [number, string, number, number, number]
-type ChunkRow = [number, string, number, number, string | null]
+type ChunkRow = [number, string, number, number, string, string, string | null]
 
 type SearchDoc = {
   id: number
@@ -38,6 +41,7 @@ type PackageCardsProps = {
 }
 
 const PAGE_SIZE = 50
+const MIN_FILTERED_VISIBLE = 12
 
 const statusFallback = STATUS_META[-1]
 
@@ -46,7 +50,9 @@ const rowToPackage = (row: ChunkRow): PackageEntry => ({
   name: row[1],
   status: row[2],
   date: row[3],
-  error: row[4],
+  oldVersion: row[4] || undefined,
+  newVersion: row[5] || undefined,
+  error: row[6],
 })
 
 const formatDate = (ts: number) => new Date(ts * 1000).toISOString().slice(0, 10)
@@ -82,6 +88,10 @@ export function PackageCards({ filters }: PackageCardsProps) {
   const miniSearchRef = useRef<MiniSearch<SearchDoc> | null>(null)
   const lookupCacheRef = useRef(new Map<number, PackageEntry[]>())
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const visibleCountRef = useRef(0)
+  const autoFillRef = useRef(false)
+  const observerDrainRef = useRef(false)
+  const sentinelIntersectingRef = useRef(false)
 
   const query = filters.query.trim()
   const isSearchMode = query.length > 0
@@ -97,7 +107,7 @@ export function PackageCards({ filters }: PackageCardsProps) {
   }
 
   const loadBrowseChunk = useCallback(async () => {
-    if (isLoadingRef.current || !hasMoreRef.current) return
+    if (isLoadingRef.current || !hasMoreRef.current) return false
     setLoadingState(true)
     setLoadError(null)
 
@@ -107,21 +117,23 @@ export function PackageCards({ filters }: PackageCardsProps) {
       if (!res.ok) {
         if (res.status === 404) {
           setHasMoreState(false)
-          return
+          return false
         }
         throw new Error(`Failed to load chunk ${chunkIndex}`)
       }
       const data: { items: ChunkRow[] } = await res.json()
       if (!data.items || data.items.length === 0) {
         setHasMoreState(false)
-        return
+        return false
       }
       const packages = data.items.map(rowToPackage)
       setBrowsePackages((prev) => [...prev, ...packages])
       browseChunkRef.current += 1
+      return true
     } catch (error) {
       setLoadError("Unable to load package data.")
       setHasMoreState(false)
+      return false
     } finally {
       setLoadingState(false)
     }
@@ -252,6 +264,24 @@ export function PackageCards({ filters }: PackageCardsProps) {
     void loadSearchPage()
   }, [isSearchMode, searchReady, searchResults, loadSearchPage])
 
+  const drainWhileIntersecting = useCallback(async () => {
+    if (observerDrainRef.current) return
+    observerDrainRef.current = true
+    try {
+      while (
+        hasMoreRef.current &&
+        !isLoadingRef.current &&
+        sentinelIntersectingRef.current
+      ) {
+        const loaded = await loadBrowseChunk()
+        if (!loaded) break
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      }
+    } finally {
+      observerDrainRef.current = false
+    }
+  }, [loadBrowseChunk])
+
   useEffect(() => {
     const node = sentinelRef.current
     if (!node) return
@@ -259,11 +289,14 @@ export function PackageCards({ filters }: PackageCardsProps) {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (!entries[0]?.isIntersecting) return
+        const entry = entries[0]
+        if (!entry) return
+        sentinelIntersectingRef.current = entry.isIntersecting
+        if (!entry.isIntersecting) return
         if (isSearchMode) {
           void loadSearchPage()
         } else {
-          void loadBrowseChunk()
+          void drainWhileIntersecting()
         }
       },
       { rootMargin: "200px" }
@@ -271,7 +304,7 @@ export function PackageCards({ filters }: PackageCardsProps) {
 
     observer.observe(node)
     return () => observer.disconnect()
-  }, [hasMore, isSearchMode, loadBrowseChunk, loadSearchPage])
+  }, [drainWhileIntersecting, hasMore, isSearchMode, loadSearchPage])
 
   const visiblePackages = useMemo(() => {
     const source = isSearchMode ? searchPackages : browsePackages
@@ -281,6 +314,63 @@ export function PackageCards({ filters }: PackageCardsProps) {
         : source.filter((entry) => entry.status === filters.status)
     return isSearchMode ? sortPackages(filtered, filters.sort) : filtered
   }, [browsePackages, filters.sort, filters.status, isSearchMode, searchPackages])
+
+  useEffect(() => {
+    visibleCountRef.current = visiblePackages.length
+  }, [visiblePackages.length])
+
+  const runAutoFill = useCallback(() => {
+    if (isSearchMode) return
+    if (filters.status === "all") return
+    if (autoFillRef.current) return
+
+    let cancelled = false
+    const run = async () => {
+      autoFillRef.current = true
+      try {
+        while (
+          !cancelled &&
+          hasMoreRef.current &&
+          !isLoadingRef.current &&
+          (visibleCountRef.current < MIN_FILTERED_VISIBLE ||
+            sentinelIntersectingRef.current)
+        ) {
+          const loaded = await loadBrowseChunk()
+          if (!loaded) break
+          await new Promise((resolve) => setTimeout(resolve, 0))
+        }
+      } finally {
+        autoFillRef.current = false
+      }
+    }
+
+    void run()
+    return () => {
+      cancelled = true
+    }
+  }, [filters.status, isSearchMode, loadBrowseChunk])
+
+  useEffect(() => runAutoFill(), [runAutoFill])
+
+  useEffect(() => {
+    if (filters.status === "all") return
+    if (isSearchMode) return
+    if (visiblePackages.length >= MIN_FILTERED_VISIBLE) return
+    runAutoFill()
+  }, [
+    browsePackages.length,
+    filters.status,
+    isSearchMode,
+    runAutoFill,
+    visiblePackages.length,
+  ])
+
+  useEffect(() => {
+    if (isSearchMode) return
+    if (!hasMore || isLoading) return
+    if (!sentinelIntersectingRef.current) return
+    void drainWhileIntersecting()
+  }, [browsePackages.length, drainWhileIntersecting, hasMore, isLoading, isSearchMode])
 
   return (
     <section className="space-y-4">
@@ -324,9 +414,17 @@ export function PackageCards({ filters }: PackageCardsProps) {
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                   Version change
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  View the log for update details.
-                </p>
+                {entry.oldVersion && entry.newVersion ? (
+                  <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold">
+                    {entry.oldVersion}
+                    <IconArrowRight className="size-4 text-muted-foreground" />
+                    {entry.newVersion}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Version info unavailable
+                  </p>
+                )}
               </div>
 
               {entry.error ? (
