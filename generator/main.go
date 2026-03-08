@@ -13,11 +13,13 @@ func main() {
 	outDir := "./generator-output"
 	timeout := 45 * time.Second
 	workers := runtime.NumCPU() * 6
+	chunkSize := 128
 
 	flag.StringVar(&baseURL, "base", baseURL, "base URL for logs")
 	flag.StringVar(&outDir, "out", outDir, "output data directory")
 	flag.DurationVar(&timeout, "timeout", timeout, "HTTP timeout")
 	flag.IntVar(&workers, "workers", workers, "number of concurrent workers")
+	flag.IntVar(&chunkSize, "chunk-size", chunkSize, "items per chunk for output files")
 	flag.Parse()
 
 	if !strings.HasSuffix(baseURL, "/") {
@@ -43,7 +45,7 @@ func main() {
 	}
 
 	logf("writing output to %s", outDir)
-	if err := writeOutput(outDir, entries); err != nil {
+	if err := writeOutput(outDir, entries, chunkSize); err != nil {
 		exitErr(err)
 	}
 	logf("done")

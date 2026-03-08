@@ -11,9 +11,10 @@ import (
 	"unicode"
 )
 
-func writeOutput(baseDir string, entries []LogEntry) error {
-	const chunkSize = 512
-
+func writeOutput(baseDir string, entries []LogEntry, chunkSize int) error {
+	if chunkSize < 1 {
+		chunkSize = 100
+	}
 	publicDir := filepath.Join(baseDir, "public")
 	astroStaticDir := filepath.Join(baseDir, "astro-static")
 	searchIndexPath := filepath.Join(publicDir, "search-index.json")
@@ -94,9 +95,6 @@ func errorField(value string) any {
 }
 
 func writeChunks(dir string, rows [][]any, chunkSize int) error {
-	if chunkSize < 1 {
-		chunkSize = 100
-	}
 	for i := 0; i < len(rows); i += chunkSize {
 		end := i + chunkSize
 		if end > len(rows) {
