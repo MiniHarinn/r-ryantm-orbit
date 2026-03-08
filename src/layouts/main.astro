@@ -1,0 +1,40 @@
+---
+import "@/styles/global.css"
+import { BackToTop } from "@/components/back-to-top"
+---
+
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <title>r-ryantm's package orbit</title>
+  </head>
+  <body class="grid-bg">
+    <slot />
+    <BackToTop client:load />
+  </body>
+  <style>
+    :root {
+      --grid-size: 36px;
+      --grid-line-width: 1px;
+    }
+
+    .grid-bg {
+      --grid-line: color-mix(in oklch, var(--border) 35%, transparent);
+      background-image:
+        linear-gradient(
+          to right,
+          var(--grid-line) var(--grid-line-width),
+          transparent var(--grid-line-width)
+        ),
+        linear-gradient(
+          to bottom,
+          var(--grid-line) var(--grid-line-width),
+          transparent var(--grid-line-width)
+        );
+      background-size: var(--grid-size) var(--grid-size);
+      background-attachment: fixed;
+    }
+  </style>
+</html>

@@ -1,0 +1,53 @@
+---
+import Layout from "@/layouts/main.astro"
+import FleetOverview from "@/components/fleet-overview.astro"
+import { PackageExplorer } from "@/components/package-explorer"
+import GithubPill from "@/components/github-pill.astro"
+import { IconPlanet } from "@tabler/icons-react"
+import meta from "../data/meta.json"
+
+const formatCount = (value: number) => value.toLocaleString("en-US")
+const formatUpdatedAt = (value: string) => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`
+}
+
+const status = meta.status ?? {}
+const fleetStats = {
+  total: formatCount(meta.total ?? 0),
+  completed: formatCount(status["1"] ?? 0),
+  failed: formatCount(status["0"] ?? 0),
+  optedOut: formatCount(status["2"] ?? 0),
+  updatedAt: formatUpdatedAt(meta.generated_at ?? ""),
+}
+---
+
+<Layout>
+  <section class="mx-auto w-full max-w-none px-4 py-10 sm:max-w-6xl sm:px-6">
+    <div class="pb-6">
+      <p class="inline-flex items-center gap-2 sm:text-xs text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
+        <IconPlanet className="size-4" />
+        just got a complete rewrite!
+      </p>
+    </div>
+    <div class="grid items-start gap-8 lg:grid-cols-[1fr_1.1fr]">
+      <div class="flex max-w-2xl flex-col gap-6">
+        <h1 class="text-5xl font-semibold tracking-tight sm:text-6xl">
+          r-ryantm's package orbit.
+        </h1>
+        <p class="text-base text-muted-foreground sm:text-xl">
+          Track nixpkgs-update runs in one place.
+        </p>
+        <div class="-mt-1 flex flex-wrap gap-3 text-xs">
+          <GithubPill author="NixOS" repo="nixpkgs" />
+          <GithubPill author="MiniHarinn" repo="r-ryantm-orbit" />
+        </div>
+      </div>
+
+      <FleetOverview {...fleetStats} />
+    </div>
+  </section>
+
+  <PackageExplorer client:load />
+</Layout>

@@ -1,0 +1,44 @@
+---
+import { IconBrandGithub, IconStarFilled } from "@tabler/icons-react"
+
+type GithubPillProps = {
+  author: string
+  repo: string
+}
+
+const { author, repo } = Astro.props as GithubPillProps
+
+let stars: string | null = null
+
+try {
+  const response = await fetch(`https://api.github.com/repos/${author}/${repo}`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+    },
+  })
+  if (response.ok) {
+    const data = await response.json()
+    if (typeof data?.stargazers_count === "number") {
+      const formatter = new Intl.NumberFormat("en", { notation: "compact" })
+      stars = formatter.format(data.stargazers_count)
+    }
+  }
+} catch (error) {
+  stars = null
+}
+---
+
+  <a
+    href={`https://github.com/${author}/${repo}`}
+    target="_blank"
+    rel="noopener"
+    class="inline-flex h-8 items-center gap-2 rounded-full border border-border/60 bg-background/40 px-3 text-xs text-foreground shadow-sm transition hover:bg-muted/60"
+  >
+    <IconBrandGithub className="size-4 text-muted-foreground" />
+    <span class="text-muted-foreground">GitHub</span>
+    <span class="text-foreground">{repo}</span>
+    <span class="inline-flex items-center gap-1 text-amber-300">
+      <IconStarFilled className="size-3" />
+      {stars ?? "—"}
+    </span>
+  </a>

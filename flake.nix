@@ -19,11 +19,7 @@
           default = pkgs.mkShell {
             packages = with pkgs; [
               go
-              gopls
-              go-tools
-              git
-              curl
-              caddy
+              bun
             ];
           };
         });
