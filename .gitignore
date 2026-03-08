@@ -1,7 +1,10 @@
 # build output
 dist/
+
 # generator output
 generator/output/
+public/data
+
 # generated types
 .astro/
 
