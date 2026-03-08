@@ -5,6 +5,8 @@ import { rowToPackage, sortPackages } from "@/lib/package-data"
 
 const PAGE_SIZE = 50
 const MIN_FILTERED_VISIBLE = 12
+const ROOT_MARGIN_PX = 200
+const MAX_DRAIN_CYCLES = 3
 
 type UsePackagePagingProps = {
   filters: PackageFilters
@@ -50,8 +52,13 @@ export const usePackagePaging = ({
     setHasMore(value)
   }
 
+  const canLoadMore = useCallback(
+    () => hasMoreRef.current && !isLoadingRef.current,
+    []
+  )
+
   const loadBrowseChunk = useCallback(async () => {
-    if (isLoadingRef.current || !hasMoreRef.current) return false
+    if (!canLoadMore()) return false
     setLoadingState(true)
     setLoadError(null)
 
@@ -81,10 +88,10 @@ export const usePackagePaging = ({
     } finally {
       setLoadingState(false)
     }
-  }, [filters.sort])
+  }, [canLoadMore, filters.sort])
 
   const loadSearchPage = useCallback(async () => {
-    if (isLoadingRef.current || !hasMoreRef.current) return
+    if (!canLoadMore()) return
 
     const cursor = searchCursorRef.current
     const page = searchResults.slice(cursor, cursor + PAGE_SIZE)
@@ -135,7 +142,7 @@ export const usePackagePaging = ({
     } finally {
       setLoadingState(false)
     }
-  }, [searchResults])
+  }, [canLoadMore, searchResults])
 
   useEffect(() => {
     if (isSearchMode) return
@@ -163,7 +170,7 @@ export const usePackagePaging = ({
     const node = sentinelRef.current
     if (!node) return false
     const rect = node.getBoundingClientRect()
-    return rect.top <= window.innerHeight + 200
+    return rect.top <= window.innerHeight + ROOT_MARGIN_PX
   }, [])
 
   const drainBrowseWhileInView = useCallback(async () => {
@@ -172,10 +179,9 @@ export const usePackagePaging = ({
     try {
       let cycles = 0
       while (
-        cycles < 3 &&
+        cycles < MAX_DRAIN_CYCLES &&
         userScrolledRef.current &&
-        hasMoreRef.current &&
-        !isLoadingRef.current &&
+        canLoadMore() &&
         isSentinelInView()
       ) {
         cycles += 1
@@ -185,7 +191,7 @@ export const usePackagePaging = ({
     } finally {
       drainInProgressRef.current = false
     }
-  }, [isSentinelInView, loadBrowseChunk])
+  }, [canLoadMore, isSentinelInView, loadBrowseChunk])
 
   useEffect(() => {
     const node = sentinelRef.current
@@ -196,30 +202,28 @@ export const usePackagePaging = ({
         const isIntersecting = entries[0]?.isIntersecting ?? false
         sentinelIntersectingRef.current = isIntersecting
         if (!isIntersecting) return
-        if (!userScrolledRef.current) return
-        if (!hasMoreRef.current || isLoadingRef.current) return
+        if (!userScrolledRef.current || !canLoadMore()) return
         if (isSearchMode) {
           void loadSearchPage()
         } else {
           void drainBrowseWhileInView()
         }
       },
-      { rootMargin: "200px" }
+      { rootMargin: `${ROOT_MARGIN_PX}px` }
     )
 
     observer.observe(node)
     return () => observer.disconnect()
-  }, [drainBrowseWhileInView, isSearchMode, loadSearchPage])
+  }, [canLoadMore, drainBrowseWhileInView, isSearchMode, loadSearchPage])
 
   useEffect(() => {
     let rafId: number | null = null
 
-    const scheduleCheck = () => {
+    const scheduleLoadIfNeeded = () => {
       if (rafId !== null) return
       rafId = window.requestAnimationFrame(() => {
         rafId = null
-        if (!userScrolledRef.current) return
-        if (!hasMoreRef.current || isLoadingRef.current) return
+        if (!userScrolledRef.current || !canLoadMore()) return
 
         const inView = sentinelIntersectingRef.current || isSentinelInView()
         if (!inView) return
@@ -236,12 +240,12 @@ export const usePackagePaging = ({
       if (!userScrolledRef.current) {
         userScrolledRef.current = true
       }
-      scheduleCheck()
+      scheduleLoadIfNeeded()
     }
 
     const onScroll = () => {
       if (!userScrolledRef.current) return
-      scheduleCheck()
+      scheduleLoadIfNeeded()
     }
 
     const onKeydown = (event: KeyboardEvent) => {
@@ -263,7 +267,7 @@ export const usePackagePaging = ({
     window.addEventListener("wheel", markUserIntent, { passive: true })
     window.addEventListener("touchmove", markUserIntent, { passive: true })
     window.addEventListener("keydown", onKeydown)
-    window.addEventListener("resize", scheduleCheck)
+    window.addEventListener("resize", scheduleLoadIfNeeded)
     return () => {
       if (rafId !== null) {
         window.cancelAnimationFrame(rafId)
@@ -272,9 +276,9 @@ export const usePackagePaging = ({
       window.removeEventListener("wheel", markUserIntent)
       window.removeEventListener("touchmove", markUserIntent)
       window.removeEventListener("keydown", onKeydown)
-      window.removeEventListener("resize", scheduleCheck)
+      window.removeEventListener("resize", scheduleLoadIfNeeded)
     }
-  }, [drainBrowseWhileInView, isSearchMode, isSentinelInView, loadSearchPage])
+  }, [canLoadMore, drainBrowseWhileInView, isSearchMode, isSentinelInView, loadSearchPage])
 
   const visiblePackages = useMemo(() => {
     if (browseResetPending) return []
@@ -290,9 +294,9 @@ export const usePackagePaging = ({
     if (isSearchMode) return
     if (filters.status === "all") return
     if (visiblePackages.length >= MIN_FILTERED_VISIBLE) return
-    if (!hasMoreRef.current || isLoadingRef.current) return
+    if (!canLoadMore()) return
     void loadBrowseChunk()
-  }, [filters.status, isSearchMode, loadBrowseChunk, visiblePackages.length, hasMore, isLoading])
+  }, [canLoadMore, filters.status, isSearchMode, loadBrowseChunk, visiblePackages.length])
 
   return {
     visiblePackages,
