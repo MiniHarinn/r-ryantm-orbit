@@ -64,7 +64,9 @@ export const usePackagePaging = ({
 
     const chunkIndex = browseChunkRef.current
     try {
-      const res = await fetch(`/data/browse/${filters.sort}/chunk-${chunkIndex}.json`)
+      const res = await fetch(
+        `${import.meta.env.BASE_URL}data/browse/${filters.sort}/chunk-${chunkIndex}.json`,
+      )
       if (!res.ok) {
         if (res.status === 404) {
           setHasMoreState(false)
@@ -109,7 +111,7 @@ export const usePackagePaging = ({
 
       await Promise.all(
         missingChunks.map(async (chunkId) => {
-          const res = await fetch(`/data/lookup/chunk-${chunkId}.json`)
+          const res = await fetch(`${import.meta.env.BASE_URL}data/lookup/chunk-${chunkId}.json`)
           if (!res.ok) {
             throw new Error(`Failed to load lookup chunk ${chunkId}`)
           }
