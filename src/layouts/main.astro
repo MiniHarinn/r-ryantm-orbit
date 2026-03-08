@@ -1,5 +1,6 @@
 ---
 import "@/styles/global.css"
+import { BackToTop } from "@/components/back-to-top"
 ---
 
 <html lang="en" class="dark">
@@ -11,5 +12,6 @@ import "@/styles/global.css"
   </head>
   <body>
     <slot />
+    <BackToTop client:load />
   </body>
 </html>
