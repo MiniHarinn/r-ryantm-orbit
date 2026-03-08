@@ -4,14 +4,7 @@ import FleetOverview from "@/components/fleet-overview.astro"
 import { PackageExplorer } from "@/components/package-explorer"
 import GithubPill from "@/components/github-pill.astro"
 import { IconPlanet } from "@tabler/icons-react"
-import { readFile } from "node:fs/promises"
-
-type MetaStats = {
-  generated_at: string
-  chunk_size: number
-  total: number
-  status: Record<string, number>
-}
+import meta from "../data/meta.json"
 
 const formatCount = (value: number) => value.toLocaleString("en-US")
 const formatUpdatedAt = (value: string) => {
@@ -20,9 +13,6 @@ const formatUpdatedAt = (value: string) => {
   return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`
 }
 
-const metaPath = new URL("../../public/data/meta.json", import.meta.url)
-const raw = await readFile(metaPath, "utf-8")
-const meta = JSON.parse(raw) as MetaStats
 const status = meta.status ?? {}
 const fleetStats = {
   total: formatCount(meta.total ?? 0),

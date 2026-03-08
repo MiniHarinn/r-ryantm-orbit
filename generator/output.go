@@ -15,15 +15,25 @@ import (
 func writeOutput(baseDir string, entries []LogEntry) error {
 	const chunkSize = 512
 
-	searchIndexPath := filepath.Join(baseDir, "search-index.json")
-	metaPath := filepath.Join(baseDir, "meta.json")
-	lookupDir := filepath.Join(baseDir, "lookup")
-	browseDateDir := filepath.Join(baseDir, "browse", "date-desc")
-	browseDateAscDir := filepath.Join(baseDir, "browse", "date-asc")
-	browseNameDir := filepath.Join(baseDir, "browse", "name-asc")
-	browseNameDescDir := filepath.Join(baseDir, "browse", "name-desc")
+	publicDir := filepath.Join(baseDir, "public")
+	astroStaticDir := filepath.Join(baseDir, "astro-static")
+	searchIndexPath := filepath.Join(publicDir, "search-index.json")
+	metaPath := filepath.Join(astroStaticDir, "meta.json")
+	lookupDir := filepath.Join(publicDir, "lookup")
+	browseDateDir := filepath.Join(publicDir, "browse", "date-desc")
+	browseDateAscDir := filepath.Join(publicDir, "browse", "date-asc")
+	browseNameDir := filepath.Join(publicDir, "browse", "name-asc")
+	browseNameDescDir := filepath.Join(publicDir, "browse", "name-desc")
 
-	for _, dir := range []string{lookupDir, browseDateDir, browseDateAscDir, browseNameDir, browseNameDescDir} {
+	for _, dir := range []string{
+		publicDir,
+		astroStaticDir,
+		lookupDir,
+		browseDateDir,
+		browseDateAscDir,
+		browseNameDir,
+		browseNameDescDir,
+	} {
 		if err := ensureDir(dir); err != nil {
 			return err
 		}

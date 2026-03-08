@@ -4,6 +4,7 @@ dist/
 # generator output
 generator/output/
 public/data
+src/data/*
 
 # generated types
 .astro/
