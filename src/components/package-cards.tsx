@@ -5,6 +5,8 @@ import {
   IconArrowRight,
   IconNotes,
   IconExternalLink,
+  IconLoader2,
+  IconConfetti,
 } from "@tabler/icons-react"
 import { STATUS_META, type PackageFilters } from "@/lib/package-types"
 import {
@@ -15,6 +17,7 @@ import {
 } from "@/lib/package-data"
 import { usePackagePaging } from "@/hooks/use-package-paging"
 import { usePackageSearch } from "@/hooks/use-package-search"
+import { useEffect, useRef, useState } from "react"
 
 type PackageCardsProps = {
   filters: PackageFilters
@@ -94,6 +97,36 @@ export function PackageCards({ filters }: PackageCardsProps) {
       searchResults,
     })
 
+  const [showLoading, setShowLoading] = useState(false)
+  const loadingTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (isLoading) {
+      if (loadingTimerRef.current !== null) {
+        window.clearTimeout(loadingTimerRef.current)
+      }
+      loadingTimerRef.current = window.setTimeout(() => {
+        setShowLoading(true)
+      }, 150)
+      return
+    }
+
+    if (loadingTimerRef.current !== null) {
+      window.clearTimeout(loadingTimerRef.current)
+      loadingTimerRef.current = null
+    }
+    setShowLoading(false)
+  }, [isLoading])
+
+  useEffect(
+    () => () => {
+      if (loadingTimerRef.current !== null) {
+        window.clearTimeout(loadingTimerRef.current)
+      }
+    },
+    []
+  )
+
   const activeError = loadError ?? searchError
 
   return (
@@ -116,9 +149,21 @@ export function PackageCards({ filters }: PackageCardsProps) {
         ))}
       </div>
 
-      {isLoading ? (
+      {showLoading ? (
         <div className="rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">
-          Loading packages...
+          <span className="inline-flex items-center gap-2">
+            <IconLoader2 className="size-4 animate-spin" />
+            Loading packages...
+          </span>
+        </div>
+      ) : null}
+
+      {!showLoading && !activeError && !hasMore && visiblePackages.length > 0 ? (
+        <div className="rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">
+          <span className="inline-flex items-center gap-2">
+            <IconConfetti className="size-4" />
+            Yep, That&apos;s all!
+          </span>
         </div>
       ) : null}
 
