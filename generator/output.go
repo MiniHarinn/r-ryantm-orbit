@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
+	"unicode"
 )
 
 func writeOutput(baseDir string, entries []LogEntry) error {
@@ -14,9 +16,11 @@ func writeOutput(baseDir string, entries []LogEntry) error {
 	searchIndexPath := filepath.Join(baseDir, "search-index.json")
 	lookupDir := filepath.Join(baseDir, "lookup")
 	browseDateDir := filepath.Join(baseDir, "browse", "date-desc")
+	browseDateAscDir := filepath.Join(baseDir, "browse", "date-asc")
 	browseNameDir := filepath.Join(baseDir, "browse", "name-asc")
+	browseNameDescDir := filepath.Join(baseDir, "browse", "name-desc")
 
-	for _, dir := range []string{lookupDir, browseDateDir, browseNameDir} {
+	for _, dir := range []string{lookupDir, browseDateDir, browseDateAscDir, browseNameDir, browseNameDescDir} {
 		if err := ensureDir(dir); err != nil {
 			return err
 		}
@@ -52,13 +56,33 @@ func writeOutput(baseDir string, entries []LogEntry) error {
 		if nameSorted[i].Package == nameSorted[j].Package {
 			return nameSorted[i].Date > nameSorted[j].Date
 		}
-		return nameSorted[i].Package < nameSorted[j].Package
+		return comparePackageName(nameSorted[i].Package, nameSorted[j].Package) < 0
 	})
 
 	if err := writeBrowseChunks(browseDateDir, dateSorted, chunkSize); err != nil {
 		return err
 	}
+	dateAsc := append([]LogEntry(nil), entries...)
+	sort.Slice(dateAsc, func(i, j int) bool {
+		if dateAsc[i].Date == dateAsc[j].Date {
+			return dateAsc[i].Package < dateAsc[j].Package
+		}
+		return dateAsc[i].Date < dateAsc[j].Date
+	})
+	if err := writeBrowseChunks(browseDateAscDir, dateAsc, chunkSize); err != nil {
+		return err
+	}
 	if err := writeBrowseChunks(browseNameDir, nameSorted, chunkSize); err != nil {
+		return err
+	}
+	nameDesc := append([]LogEntry(nil), entries...)
+	sort.Slice(nameDesc, func(i, j int) bool {
+		if nameDesc[i].Package == nameDesc[j].Package {
+			return nameDesc[i].Date > nameDesc[j].Date
+		}
+		return comparePackageName(nameDesc[i].Package, nameDesc[j].Package) > 0
+	})
+	if err := writeBrowseChunks(browseNameDescDir, nameDesc, chunkSize); err != nil {
 		return err
 	}
 
@@ -113,4 +137,64 @@ func ensureDir(path string) error {
 		return nil
 	}
 	return os.MkdirAll(path, 0o755)
+}
+
+func comparePackageName(a, b string) int {
+	ar := []rune(a)
+	br := []rune(b)
+	limit := len(ar)
+	if len(br) < limit {
+		limit = len(br)
+	}
+	for i := 0; i < limit; i++ {
+		ac := ar[i]
+		bc := br[i]
+		at := charType(ac)
+		bt := charType(bc)
+		if at != bt {
+			if at < bt {
+				return -1
+			}
+			return 1
+		}
+
+		acComp := ac
+		bcComp := bc
+		if at == 2 {
+			acComp = []rune(strings.ToLower(string(ac)))[0]
+			bcComp = []rune(strings.ToLower(string(bc)))[0]
+		}
+		if acComp != bcComp {
+			if acComp < bcComp {
+				return -1
+			}
+			return 1
+		}
+
+		if ac != bc {
+			if ac < bc {
+				return -1
+			}
+			return 1
+		}
+	}
+
+	switch {
+	case len(ar) < len(br):
+		return -1
+	case len(ar) > len(br):
+		return 1
+	default:
+		return 0
+	}
+}
+
+func charType(r rune) int {
+	if unicode.IsLetter(r) {
+		return 2
+	}
+	if unicode.IsDigit(r) {
+		return 1
+	}
+	return 0
 }
