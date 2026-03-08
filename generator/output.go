@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 	"unicode"
 )
@@ -59,45 +58,19 @@ func writeOutput(baseDir string, entries []LogEntry) error {
 		return err
 	}
 
-	dateSorted := append([]LogEntry(nil), entries...)
-	sort.Slice(dateSorted, func(i, j int) bool {
-		if dateSorted[i].Date == dateSorted[j].Date {
-			return dateSorted[i].Package < dateSorted[j].Package
-		}
-		return dateSorted[i].Date > dateSorted[j].Date
-	})
-
-	nameSorted := append([]LogEntry(nil), entries...)
-	sort.Slice(nameSorted, func(i, j int) bool {
-		if nameSorted[i].Package == nameSorted[j].Package {
-			return nameSorted[i].Date > nameSorted[j].Date
-		}
-		return comparePackageName(nameSorted[i].Package, nameSorted[j].Package) < 0
-	})
-
-	if err := writeBrowseChunks(browseDateDir, dateSorted, chunkSize); err != nil {
+	dateDesc := sortByDate(entries, false)
+	if err := writeBrowseChunks(browseDateDir, dateDesc, chunkSize); err != nil {
 		return err
 	}
-	dateAsc := append([]LogEntry(nil), entries...)
-	sort.Slice(dateAsc, func(i, j int) bool {
-		if dateAsc[i].Date == dateAsc[j].Date {
-			return dateAsc[i].Package < dateAsc[j].Package
-		}
-		return dateAsc[i].Date < dateAsc[j].Date
-	})
+	dateAsc := sortByDate(entries, true)
 	if err := writeBrowseChunks(browseDateAscDir, dateAsc, chunkSize); err != nil {
 		return err
 	}
-	if err := writeBrowseChunks(browseNameDir, nameSorted, chunkSize); err != nil {
+	nameAsc := sortByName(entries, true)
+	if err := writeBrowseChunks(browseNameDir, nameAsc, chunkSize); err != nil {
 		return err
 	}
-	nameDesc := append([]LogEntry(nil), entries...)
-	sort.Slice(nameDesc, func(i, j int) bool {
-		if nameDesc[i].Package == nameDesc[j].Package {
-			return nameDesc[i].Date > nameDesc[j].Date
-		}
-		return comparePackageName(nameDesc[i].Package, nameDesc[j].Package) > 0
-	})
+	nameDesc := sortByName(entries, false)
 	if err := writeBrowseChunks(browseNameDescDir, nameDesc, chunkSize); err != nil {
 		return err
 	}
@@ -170,6 +143,34 @@ func buildMeta(entries []LogEntry, chunkSize int) map[string]any {
 	}
 }
 
+func sortByDate(entries []LogEntry, asc bool) []LogEntry {
+	sorted := append([]LogEntry(nil), entries...)
+	sort.Slice(sorted, func(i, j int) bool {
+		if sorted[i].Date == sorted[j].Date {
+			return sorted[i].Package < sorted[j].Package
+		}
+		if asc {
+			return sorted[i].Date < sorted[j].Date
+		}
+		return sorted[i].Date > sorted[j].Date
+	})
+	return sorted
+}
+
+func sortByName(entries []LogEntry, asc bool) []LogEntry {
+	sorted := append([]LogEntry(nil), entries...)
+	sort.Slice(sorted, func(i, j int) bool {
+		if sorted[i].Package == sorted[j].Package {
+			return sorted[i].Date > sorted[j].Date
+		}
+		if asc {
+			return comparePackageName(sorted[i].Package, sorted[j].Package) < 0
+		}
+		return comparePackageName(sorted[i].Package, sorted[j].Package) > 0
+	})
+	return sorted
+}
+
 func comparePackageName(a, b string) int {
 	ar := []rune(a)
 	br := []rune(b)
@@ -192,8 +193,8 @@ func comparePackageName(a, b string) int {
 		acComp := ac
 		bcComp := bc
 		if at == 2 {
-			acComp = []rune(strings.ToLower(string(ac)))[0]
-			bcComp = []rune(strings.ToLower(string(bc)))[0]
+			acComp = unicode.ToLower(ac)
+			bcComp = unicode.ToLower(bc)
 		}
 		if acComp != bcComp {
 			if acComp < bcComp {

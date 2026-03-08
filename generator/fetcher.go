@@ -24,7 +24,7 @@ func fetchEntriesConcurrent(client *http.Client, baseURL string, packages []stri
 	}
 
 	jobs := make(chan job)
-	results := make(chan result)
+	results := make(chan result, len(packages))
 
 	for i := 0; i < workers; i++ {
 		go func() {
@@ -47,7 +47,7 @@ func fetchEntriesConcurrent(client *http.Client, baseURL string, packages []stri
 				entry := LogEntry{
 					Package: j.packageName,
 					Date:    dateToUnix(latest),
-					Status:  statusEnum("unknown"),
+					Status:  StatusUnknown,
 					OldVer:  "",
 					NewVer:  "",
 					Error:   "",
@@ -58,8 +58,8 @@ func fetchEntriesConcurrent(client *http.Client, baseURL string, packages []stri
 					entry.OldVer = oldVer
 					entry.NewVer = newVer
 					entry.Status = statusEnum(deriveStatus(text))
-					if entry.Status == statusEnum("failed") {
-						entry.Error = deriveError(strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n"))
+					if entry.Status == StatusFailed {
+						entry.Error = deriveError(text)
 					}
 				}
 

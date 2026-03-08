@@ -15,18 +15,26 @@ func logf(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "log: "+format+"\n", args...)
 }
 
+const (
+	StatusFailed         = 0
+	StatusSuccess        = 1
+	StatusOptedOut       = 2
+	StatusAlreadyUpdated = 3
+	StatusUnknown        = -1
+)
+
 func statusEnum(status string) int {
 	switch status {
 	case "success":
-		return 1
+		return StatusSuccess
 	case "failed":
-		return 0
+		return StatusFailed
 	case "opted-out":
-		return 2
+		return StatusOptedOut
 	case "already-updated":
-		return 3
+		return StatusAlreadyUpdated
 	default:
-		return -1
+		return StatusUnknown
 	}
 }
 

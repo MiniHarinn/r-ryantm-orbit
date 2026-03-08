@@ -5,6 +5,12 @@ import (
 	"strings"
 )
 
+var (
+	updateInfoRE   = regexp.MustCompile(`UPDATE_INFO:\s+\S+\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*->\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+	versionArrowRE = regexp.MustCompile(`(?i)([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*(?:->|=>|→)\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+	versionFromToRE = regexp.MustCompile(`(?i)from\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s+to\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+)
+
 func deriveStatus(text string) string {
 	lower := strings.ToLower(text)
 
@@ -35,7 +41,8 @@ func deriveStatus(text string) string {
 	}
 }
 
-func deriveError(lines []string) string {
+func deriveError(text string) string {
+	lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		lower := strings.ToLower(trimmed)
@@ -87,8 +94,7 @@ func parseUpdateInfo(line string) (string, string, bool) {
 	if !strings.Contains(line, "UPDATE_INFO:") {
 		return "", "", false
 	}
-	re := regexp.MustCompile(`UPDATE_INFO:\s+\S+\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*->\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
-	match := re.FindStringSubmatch(line)
+	match := updateInfoRE.FindStringSubmatch(line)
 	if len(match) < 3 {
 		return "", "", false
 	}
@@ -107,8 +113,7 @@ func parseVersionArrow(line, pkg string) (string, string, bool) {
 		return "", "", false
 	}
 
-	re := regexp.MustCompile(`(?i)([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*(?:->|=>|→)\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
-	match := re.FindStringSubmatch(line)
+	match := versionArrowRE.FindStringSubmatch(line)
 	if len(match) < 3 {
 		return "", "", false
 	}
@@ -127,8 +132,7 @@ func parseVersionFromTo(line, pkg string) (string, string, bool) {
 		return "", "", false
 	}
 
-	re := regexp.MustCompile(`(?i)from\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s+to\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
-	match := re.FindStringSubmatch(line)
+	match := versionFromToRE.FindStringSubmatch(line)
 	if len(match) < 3 {
 		return "", "", false
 	}
