@@ -28,9 +28,9 @@ type LogEntry struct {
 
 func main() {
 	baseURL := "https://nixpkgs-update-logs.nix-community.org/"
-	outDir := "../public/data"
+	outDir := "../output"
 	timeout := 45 * time.Second
-	workers := runtime.NumCPU() * 4
+	workers := runtime.NumCPU() * 6
 
 	flag.StringVar(&baseURL, "base", baseURL, "base URL for logs")
 	flag.StringVar(&outDir, "out", outDir, "output data directory")
