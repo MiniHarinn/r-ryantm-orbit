@@ -63,6 +63,29 @@ const {
     </div>
   </div>
   <div class="mt-6 rounded-2xl border bg-background px-4 py-3 text-xs text-muted-foreground">
-    Updated At: <span class="text-foreground">{updatedAt}</span>
+    Updated At:
+    <span class="text-foreground" data-updated-at={updatedAt} id="fleet-updated-at">
+      {updatedAt}
+    </span>
+    <span class="text-foreground" id="fleet-updated-local"></span>
   </div>
 </aside>
+
+<script>
+  const updatedAtEl = document.getElementById("fleet-updated-at")
+  const localEl = document.getElementById("fleet-updated-local")
+
+  if (updatedAtEl && localEl) {
+    const raw = updatedAtEl.getAttribute("data-updated-at")
+    if (raw) {
+      const parsed = new Date(raw)
+      if (!Number.isNaN(parsed.getTime())) {
+        const formatter = new Intl.DateTimeFormat(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        })
+        localEl.textContent = ` (Local: ${formatter.format(parsed)})`
+      }
+    }
+  }
+</script>
