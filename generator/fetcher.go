@@ -143,7 +143,11 @@ func fetchPackageList(ctx context.Context, client *http.Client, baseURL string) 
 			continue
 		}
 		if strings.HasSuffix(link, "/") {
-			packages = append(packages, strings.TrimSuffix(link, "/"))
+			name := strings.TrimSuffix(link, "/")
+			if strings.HasPrefix(name, "~") {
+				continue
+			}
+			packages = append(packages, name)
 		}
 	}
 
