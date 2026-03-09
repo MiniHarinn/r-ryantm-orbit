@@ -5,21 +5,33 @@ import {
   IconCheck,
   IconAlertTriangle,
   IconHandStop,
+  IconCopy,
+  IconMinus,
+  IconAlertCircle,
+  IconDots,
 } from "@tabler/icons-react"
 
 export type FleetStats = {
   total: string
-  completed: string
+  success: string
   failed: string
-  optedOut: string
+  skipped: string
+  duplicate: string
+  noChange: string
+  invalid: string
+  other: string
   updatedAt: string
 }
 
 const {
   total,
-  completed,
+  success,
   failed,
-  optedOut,
+  skipped,
+  duplicate,
+  noChange,
+  invalid,
+  other,
   updatedAt,
 } = Astro.props as Partial<FleetStats>
 ---
@@ -43,9 +55,9 @@ const {
     <div class="rounded-2xl border bg-background p-4">
     <p class="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground whitespace-nowrap">
       <IconCheck className="size-3" />
-      Completed
+      Success
     </p>
-      <p class="mt-2 text-2xl font-semibold status-success-text">{completed}</p>
+      <p class="mt-2 text-2xl font-semibold status-success-text">{success}</p>
     </div>
     <div class="rounded-2xl border bg-background p-4">
     <p class="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground whitespace-nowrap">
@@ -57,9 +69,37 @@ const {
     <div class="rounded-2xl border bg-background p-4">
     <p class="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground whitespace-nowrap">
       <IconHandStop className="size-3" />
-      Opted out
+      Skipped
     </p>
-      <p class="mt-2 text-2xl font-semibold status-warning-text">{optedOut}</p>
+      <p class="mt-2 text-2xl font-semibold status-warning-text">{skipped}</p>
+    </div>
+    <div class="rounded-2xl border bg-background p-4">
+    <p class="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground whitespace-nowrap">
+      <IconCopy className="size-3" />
+      Duplicate
+    </p>
+      <p class="mt-2 text-2xl font-semibold status-indigo-text">{duplicate}</p>
+    </div>
+    <div class="rounded-2xl border bg-background p-4">
+    <p class="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground whitespace-nowrap">
+      <IconMinus className="size-3" />
+      No change
+    </p>
+      <p class="mt-2 text-2xl font-semibold status-neutral-text">{noChange}</p>
+    </div>
+    <div class="rounded-2xl border bg-background p-4">
+    <p class="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground whitespace-nowrap">
+      <IconAlertCircle className="size-3" />
+      Invalid
+    </p>
+      <p class="mt-2 text-2xl font-semibold status-error-text">{invalid}</p>
+    </div>
+    <div class="rounded-2xl border bg-background p-4">
+    <p class="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground whitespace-nowrap">
+      <IconDots className="size-3" />
+      Other
+    </p>
+      <p class="mt-2 text-2xl font-semibold status-neutral-text">{other}</p>
     </div>
   </div>
   <div class="mt-6 rounded-2xl border bg-background px-4 py-3 text-xs text-muted-foreground">

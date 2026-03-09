@@ -63,7 +63,7 @@ func fetchEntriesConcurrent(ctx context.Context, client *http.Client, baseURL st
 				entry := LogEntry{
 					Package: j.packageName,
 					Date:    dateToUnix(latest),
-					Status:  StatusUnknown,
+					Status:  StatusOther,
 					OldVer:  "",
 					NewVer:  "",
 					Error:   "",

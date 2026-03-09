@@ -11,36 +11,65 @@ var (
 	versionFromToRE   = regexp.MustCompile(`(?i)from\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s+to\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
 	versionLabelOldRE = regexp.MustCompile(`(?i)(?:current|old|previous)\s*version\s*[:=]\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
 	versionLabelNewRE = regexp.MustCompile(`(?i)(?:new|latest|next)\s*version\s*[:=]\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+
+	statusSuccessRE = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)successfully finished processing`),
+	}
+	statusSkippedRE = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)derivation file opts?-out of auto-updates`),
+	}
+	statusDuplicateRE = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)auto update branch exists with an equal or greater version`),
+		regexp.MustCompile(`(?i)there might already be an open PR for this update:`),
+		regexp.MustCompile(`(?i)too many open PRs from`),
+	}
+	statusNoChangeRE = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)diff was empty after rewrites\.`),
+		regexp.MustCompile(`(?i)no rewrites performed on derivation\.`),
+		regexp.MustCompile(`(?i)source url did not change`),
+		regexp.MustCompile(`(?i)hashes equal; no update necessary`),
+		regexp.MustCompile(`(?i)rev equal; no update necessary`),
+		regexp.MustCompile(`(?i)package version did not change\.`),
+		regexp.MustCompile(`(?i)update edits cause no rebuilds\.`),
+		regexp.MustCompile(`(?i)cargo hashes equal; no update necessary:`),
+		regexp.MustCompile(`(?i)deps hashes equal; no update necessary:`),
+	}
+	statusInvalidRE = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)is not newer than .* according to Nix; versionComparison:`),
+		regexp.MustCompile(`(?i)derivation has no 'version' attribute, so do not know how to figure out the version while doing an updateScript update`),
+		regexp.MustCompile(`(?i)old version .* not present in .* derivation file with contents:`),
+	}
+	statusFailedRE = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\[updateScript\]\s+failed with exit code`),
+		regexp.MustCompile(`(?i)nix build failed\.`),
+		regexp.MustCompile(`(?i)nix log failed trying to get build logs`),
+		regexp.MustCompile(`(?i)could not find result link`),
+		regexp.MustCompile(`(?i)build succeeded unexpectedly`),
+		regexp.MustCompile(`(?i)grep did not find version in file names`),
+		regexp.MustCompile(`(?i)failed to read expected nix boolean`),
+	}
 )
 
 func deriveStatus(text string) string {
-	lower := strings.ToLower(text)
-
-	switch {
-	case strings.Contains(lower, "[result] success updating") ||
-		strings.Contains(lower, "successfully finished processing"):
+	if matchesAny(text, statusSuccessRE) {
 		return "success"
-	case strings.Contains(lower, "derivation file opts-out of auto-updates") ||
-		strings.Contains(lower, "nixpkgs-update: no auto update") ||
-		strings.Contains(lower, "opts out of auto-updates") ||
-		strings.Contains(lower, "opts-out of auto-updates"):
-		return "opted-out"
-	case strings.Contains(lower, "auto update branch exists with an equal or greater version") ||
-		strings.Contains(lower, "auto update branch exists with an equal or greater"):
-		return "already-updated"
-	case strings.Contains(lower, "[result] failed to update"):
-		return "failed"
-	case strings.Contains(lower, "error:") ||
-		strings.Contains(lower, "failed with exit code") ||
-		strings.Contains(lower, "build failed") ||
-		strings.Contains(lower, "dependency failed") ||
-		strings.Contains(lower, "cannot build") ||
-		strings.Contains(lower, "failed to build") ||
-		strings.Contains(lower, "failed to download"):
-		return "failed"
-	default:
-		return "unknown"
 	}
+	if matchesAny(text, statusSkippedRE) {
+		return "skipped"
+	}
+	if matchesAny(text, statusDuplicateRE) {
+		return "duplicate"
+	}
+	if matchesAny(text, statusNoChangeRE) {
+		return "no-change"
+	}
+	if matchesAny(text, statusInvalidRE) {
+		return "invalid"
+	}
+	if matchesAny(text, statusFailedRE) {
+		return "failed"
+	}
+	return "other"
 }
 
 func deriveError(text string) string {
@@ -90,6 +119,15 @@ func deriveVersions(text, pkg string) (string, string) {
 	}
 
 	return "", ""
+}
+
+func matchesAny(text string, patterns []*regexp.Regexp) bool {
+	for _, re := range patterns {
+		if re.MatchString(text) {
+			return true
+		}
+	}
+	return false
 }
 
 func parseUpdateInfo(line string) (string, string, bool) {

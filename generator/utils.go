@@ -18,11 +18,13 @@ func logf(format string, args ...any) {
 type Status int
 
 const (
-	StatusFailed         Status = 0
-	StatusSuccess        Status = 1
-	StatusOptedOut       Status = 2
-	StatusAlreadyUpdated Status = 3
-	StatusUnknown        Status = -1
+	StatusFailed    Status = 0
+	StatusSuccess   Status = 1
+	StatusSkipped   Status = 2
+	StatusDuplicate Status = 3
+	StatusNoChange  Status = 4
+	StatusInvalid   Status = 5
+	StatusOther     Status = -1
 )
 
 func statusEnum(status string) Status {
@@ -31,12 +33,16 @@ func statusEnum(status string) Status {
 		return StatusSuccess
 	case "failed":
 		return StatusFailed
-	case "opted-out":
-		return StatusOptedOut
-	case "already-updated":
-		return StatusAlreadyUpdated
+	case "skipped":
+		return StatusSkipped
+	case "duplicate":
+		return StatusDuplicate
+	case "no-change":
+		return StatusNoChange
+	case "invalid":
+		return StatusInvalid
 	default:
-		return StatusUnknown
+		return StatusOther
 	}
 }
 
