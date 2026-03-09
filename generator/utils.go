@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 )
 
 func exitErr(err error) {
@@ -44,12 +43,4 @@ func statusEnum(status string) Status {
 	default:
 		return StatusOther
 	}
-}
-
-func dateToUnix(date string) int64 {
-	parsed, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		return 0
-	}
-	return parsed.Unix()
 }

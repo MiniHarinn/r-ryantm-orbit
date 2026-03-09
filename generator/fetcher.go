@@ -42,7 +42,7 @@ func fetchEntriesConcurrent(ctx context.Context, client *http.Client, baseURL st
 				if j.index%progressEvery == 0 {
 					logf("processing package %d/%d", j.index+1, len(packages))
 				}
-				latest, err := fetchLatestDate(ctx, client, baseURL, j.packageName)
+				latestDate, latestTime, err := fetchLatestDate(ctx, client, baseURL, j.packageName)
 				if err != nil {
 					select {
 					case results <- result{index: j.index, err: err}:
@@ -50,7 +50,7 @@ func fetchEntriesConcurrent(ctx context.Context, client *http.Client, baseURL st
 					}
 					continue
 				}
-				if latest == "" {
+				if latestDate == "" {
 					select {
 					case results <- result{index: j.index, entry: nil}:
 					case <-ctx.Done():
@@ -58,11 +58,11 @@ func fetchEntriesConcurrent(ctx context.Context, client *http.Client, baseURL st
 					continue
 				}
 
-				logURL := fmt.Sprintf("%s%s/%s.log", baseURL, j.packageName, latest)
+				logURL := fmt.Sprintf("%s%s/%s.log", baseURL, j.packageName, latestDate)
 				body, err := fetch(ctx, client, logURL)
 				entry := LogEntry{
 					Package: j.packageName,
-					Date:    dateToUnix(latest),
+					Date:    latestTime.Unix(),
 					Status:  StatusOther,
 					OldVer:  "",
 					NewVer:  "",
@@ -151,32 +151,44 @@ func fetchPackageList(ctx context.Context, client *http.Client, baseURL string) 
 	return packages, nil
 }
 
-func fetchLatestDate(ctx context.Context, client *http.Client, baseURL, pkg string) (string, error) {
+func fetchLatestDate(ctx context.Context, client *http.Client, baseURL, pkg string) (string, time.Time, error) {
 	indexURL := fmt.Sprintf("%s%s/", baseURL, pkg)
 	body, err := fetch(ctx, client, indexURL)
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 	links, err := parseLinks(body)
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 
-	dates := make([]string, 0)
+	timestamps := parseIndexTimestamps(body)
+	type logDate struct {
+		dateStr string
+		ts      time.Time
+	}
+	candidates := make([]logDate, 0)
 	for _, link := range links {
 		if !strings.HasSuffix(link, ".log") {
 			continue
 		}
-		date := strings.TrimSuffix(link, ".log")
-		if _, err := time.Parse("2006-01-02", date); err != nil {
+		dateStr := strings.TrimSuffix(link, ".log")
+		ts, ok := timestamps[link]
+		if !ok {
 			continue
 		}
-		dates = append(dates, date)
+		candidates = append(candidates, logDate{dateStr: dateStr, ts: ts})
 	}
 
-	if len(dates) == 0 {
-		return "", nil
+	if len(candidates) == 0 {
+		return "", time.Time{}, nil
 	}
-	sort.Strings(dates)
-	return dates[len(dates)-1], nil
+	sort.Slice(candidates, func(i, j int) bool {
+		if candidates[i].ts.Equal(candidates[j].ts) {
+			return candidates[i].dateStr < candidates[j].dateStr
+		}
+		return candidates[i].ts.Before(candidates[j].ts)
+	})
+	latest := candidates[len(candidates)-1]
+	return latest.dateStr, latest.ts, nil
 }
