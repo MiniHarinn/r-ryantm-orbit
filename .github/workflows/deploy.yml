@@ -38,7 +38,9 @@ jobs:
         run: nix develop -c sh -c "cd generator && go run ."
 
       - name: Copy generated data
-        run: nix develop -c sh -c "mv ./generator/generator-output/astro-static ./src/data && mv ./generator/generator-output/public ./public/data"
+        run: |
+          nix develop -c sh -c "rm -rf ./src/data ./public/data"
+          nix develop -c sh -c "mv ./generator/generator-output/astro-static ./src/data && mv ./generator/generator-output/public ./public/data"
 
       - name: Build Astro
         run: nix develop -c bun run build
