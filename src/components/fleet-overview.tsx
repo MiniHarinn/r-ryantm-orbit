@@ -110,7 +110,7 @@ export default function FleetOverview({
           >
             <IconChevronLeft />
           </Button>
-          <span className="min-w-[2.5rem] text-center text-[11px] text-muted-foreground">
+          <span className="min-w-10 text-center text-[11px] text-muted-foreground">
             {current}/{count}
           </span>
           <Button
