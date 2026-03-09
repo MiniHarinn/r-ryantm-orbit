@@ -40,6 +40,7 @@ var (
 		regexp.MustCompile(`(?i)old version .* not present in .* derivation file with contents:`),
 	}
 	statusFailedRE = []*regexp.Regexp{
+		// ===== nixpkgs-update messages =====
 		regexp.MustCompile(`(?i)\[updateScript\]\s+failed with exit code`),
 		regexp.MustCompile(`(?i)nix build failed\.`),
 		regexp.MustCompile(`(?i)nix log failed trying to get build logs`),
@@ -47,6 +48,10 @@ var (
 		regexp.MustCompile(`(?i)build succeeded unexpectedly`),
 		regexp.MustCompile(`(?i)grep did not find version in file names`),
 		regexp.MustCompile(`(?i)failed to read expected nix boolean`),
+		// ===== nix stderr =====
+		regexp.MustCompile(`(?im)^error:`),
+		regexp.MustCompile(`(?i)builder for '.+?\\.drv' failed with exit code`),
+		regexp.MustCompile(`(?i)build of '.+?\\.drv'.+failed`),
 	}
 )
 
