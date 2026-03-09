@@ -66,7 +66,6 @@ func fetchEntriesConcurrent(ctx context.Context, client *http.Client, baseURL st
 					Status:  StatusOther,
 					OldVer:  "",
 					NewVer:  "",
-					Error:   "",
 				}
 				if err == nil {
 					text := string(body)
@@ -74,9 +73,6 @@ func fetchEntriesConcurrent(ctx context.Context, client *http.Client, baseURL st
 					entry.OldVer = oldVer
 					entry.NewVer = newVer
 					entry.Status = statusEnum(deriveStatus(text))
-					if entry.Status == StatusFailed {
-						entry.Error = deriveError(text)
-					}
 				}
 
 				select {

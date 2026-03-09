@@ -69,12 +69,6 @@ const PackageCard = ({ entry }: { entry: PackageEntry }) => {
         )}
       </div>
 
-      {entry.error ? (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
-          {entry.error}
-        </div>
-      ) : null}
-
       <div className="mt-auto flex flex-wrap gap-2">
         <Button asChild variant="outline" size="sm" className="gap-2">
           <a href={logUrl(entry.name, entry.date)} target="_blank" rel="noreferrer">

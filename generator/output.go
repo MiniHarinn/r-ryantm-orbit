@@ -44,9 +44,8 @@ func writeOutput(baseDir string, entries []LogEntry, chunkSize int) error {
 
 	for _, entry := range entries {
 		lookupChunk := (len(lookupRows) / chunkSize) + 1
-		errorValue := errorField(entry.Error)
 		searchIndexRows = append(searchIndexRows, []any{entry.ID, entry.Package, entry.Status, entry.Date, lookupChunk})
-		lookupRows = append(lookupRows, []any{entry.ID, entry.Package, entry.Status, entry.Date, entry.OldVer, entry.NewVer, errorValue})
+		lookupRows = append(lookupRows, []any{entry.ID, entry.Package, entry.Status, entry.Date, entry.OldVer, entry.NewVer})
 	}
 
 	if err := writeChunks(lookupDir, lookupRows, chunkSize); err != nil {
@@ -82,16 +81,9 @@ func writeOutput(baseDir string, entries []LogEntry, chunkSize int) error {
 func writeBrowseChunks(dir string, entries []LogEntry, chunkSize int) error {
 	rows := make([][]any, 0, len(entries))
 	for _, entry := range entries {
-		rows = append(rows, []any{entry.ID, entry.Package, entry.Status, entry.Date, entry.OldVer, entry.NewVer, errorField(entry.Error)})
+		rows = append(rows, []any{entry.ID, entry.Package, entry.Status, entry.Date, entry.OldVer, entry.NewVer})
 	}
 	return writeChunks(dir, rows, chunkSize)
-}
-
-func errorField(value string) any {
-	if value == "" {
-		return nil
-	}
-	return value
 }
 
 func writeChunks(dir string, rows [][]any, chunkSize int) error {

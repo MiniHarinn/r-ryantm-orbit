@@ -5,11 +5,10 @@ export type PackageEntry = {
   date: number
   oldVersion?: string
   newVersion?: string
-  error: string | null
 }
 
 export type SearchRow = [number, string, number, number, number]
-export type ChunkRow = [number, string, number, number, string, string, string | null]
+export type ChunkRow = [number, string, number, number, string, string]
 
 export type SearchDoc = {
   id: number
@@ -31,7 +30,6 @@ export const rowToPackage = (row: ChunkRow): PackageEntry => ({
   date: row[3],
   oldVersion: row[4] || undefined,
   newVersion: row[5] || undefined,
-  error: row[6],
 })
 
 export const formatDate = (ts: number) => new Date(ts * 1000).toISOString().slice(0, 10)

@@ -7,5 +7,4 @@ type LogEntry struct {
 	Status  Status
 	OldVer  string
 	NewVer  string
-	Error   string
 }

@@ -73,21 +73,6 @@ func deriveStatus(text string) string {
 	return "other"
 }
 
-func deriveError(text string) string {
-	lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		lower := strings.ToLower(trimmed)
-		if strings.Contains(lower, "error:") || strings.Contains(lower, "failed") {
-			if len(trimmed) > 240 {
-				return trimmed[:240] + "..."
-			}
-			return trimmed
-		}
-	}
-	return ""
-}
-
 func deriveVersions(text, pkg string) (string, string) {
 	lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
 	for _, line := range lines {
