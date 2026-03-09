@@ -43,6 +43,9 @@
     --status-warning: 251 191 36;
     --status-neutral: 148 163 184;
     --status-indigo: 99 102 241;
+    --status-nochange: 59 130 246;
+    --status-invalid: 168 85 247;
+    --status-other: 14 116 144;
 }
 
 .dark {
@@ -82,6 +85,9 @@
     --status-warning: 251 191 36;
     --status-neutral: 148 163 184;
     --status-indigo: 129 140 248;
+    --status-nochange: 96 165 250;
+    --status-invalid: 192 132 252;
+    --status-other: 45 212 191;
 }
 
 @theme inline {
@@ -197,6 +203,42 @@
 
   .status-indigo-bg {
     background-color: rgb(var(--status-indigo) / 0.12);
+  }
+
+  .status-nochange-text {
+    color: rgb(var(--status-nochange) / 1);
+  }
+
+  .status-nochange-border {
+    border-color: rgb(var(--status-nochange) / 0.4);
+  }
+
+  .status-nochange-bg {
+    background-color: rgb(var(--status-nochange) / 0.12);
+  }
+
+  .status-invalid-text {
+    color: rgb(var(--status-invalid) / 1);
+  }
+
+  .status-invalid-border {
+    border-color: rgb(var(--status-invalid) / 0.4);
+  }
+
+  .status-invalid-bg {
+    background-color: rgb(var(--status-invalid) / 0.12);
+  }
+
+  .status-other-text {
+    color: rgb(var(--status-other) / 1);
+  }
+
+  .status-other-border {
+    border-color: rgb(var(--status-other) / 0.4);
+  }
+
+  .status-other-bg {
+    background-color: rgb(var(--status-other) / 0.12);
   }
 
 }

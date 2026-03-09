@@ -10,13 +10,13 @@ export type StatusMeta = {
 }
 
 export const STATUS_META: Record<number, StatusMeta> = {
-  "-1": { label: "Other", className: "status-neutral-border status-neutral-text" },
+  "-1": { label: "Other", className: "status-other-border status-other-text" },
   0: { label: "Failed", className: "status-error-border status-error-text" },
   1: { label: "Success", className: "status-success-border status-success-text" },
   2: { label: "Skipped", className: "status-warning-border status-warning-text" },
   3: { label: "Duplicate", className: "status-indigo-border status-indigo-text" },
-  4: { label: "No change", className: "status-neutral-border status-neutral-text" },
-  5: { label: "Invalid", className: "status-error-border status-error-text" },
+  4: { label: "No change", className: "status-nochange-border status-nochange-text" },
+  5: { label: "Invalid", className: "status-invalid-border status-invalid-text" },
 }
 
 export const STATUS_FILTERS: Array<{ value: PackageFilters["status"]; label: string }> =

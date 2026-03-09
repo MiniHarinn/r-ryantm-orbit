@@ -1,6 +1,6 @@
 ---
 import Layout from "@/layouts/main.astro"
-import FleetOverview from "@/components/fleet-overview.astro"
+import FleetOverview from "@/components/fleet-overview"
 import { PackageExplorer } from "@/components/package-explorer"
 import GithubPill from "@/components/github-pill.astro"
 import { IconPlanet } from "@tabler/icons-react"
@@ -49,7 +49,7 @@ const fleetStats = {
         </div>
       </div>
 
-      <FleetOverview {...fleetStats} />
+      <FleetOverview client:load {...fleetStats} />
     </div>
   </section>
 
