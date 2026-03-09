@@ -11,7 +11,6 @@ tasks:
     cmds:
       - mv ./generator/generator-output/astro-static ./src/data
       - mv ./generator/generator-output/public ./public/data
-      - rm -r ./genertor/genertor-output
 
   clean:
     desc: Clean moved file
