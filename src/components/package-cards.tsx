@@ -8,6 +8,7 @@ import {
   IconLoader2,
   IconConfetti,
   IconZoomCancel,
+  IconAlertCircle,
 } from "@tabler/icons-react"
 import { STATUS_META, type PackageFilters } from "@/lib/package-types"
 import {
@@ -52,14 +53,19 @@ const PackageCard = ({ entry }: { entry: PackageEntry }) => {
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
           Version change
         </p>
-        {entry.oldVersion && entry.newVersion ? (
+        {entry.oldVersion &&
+        entry.newVersion &&
+        !(entry.oldVersion === "0" && entry.newVersion === "1") ? (
           <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold">
             {entry.oldVersion}
             <IconArrowRight className="size-4 text-muted-foreground" />
             {entry.newVersion}
           </p>
         ) : (
-          <p className="mt-1 text-sm text-muted-foreground">Version info unavailable</p>
+          <p className="mt-1 inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <IconAlertCircle className="size-4" />
+            No version information
+          </p>
         )}
       </div>
 
