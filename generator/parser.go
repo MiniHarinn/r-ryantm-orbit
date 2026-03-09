@@ -6,11 +6,7 @@ import (
 )
 
 var (
-	updateInfoRE      = regexp.MustCompile(`UPDATE_INFO:\s+\S+\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*->\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
-	versionArrowRE    = regexp.MustCompile(`(?i)([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*(?:->|=>|→)\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
-	versionFromToRE   = regexp.MustCompile(`(?i)from\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s+to\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
-	versionLabelOldRE = regexp.MustCompile(`(?i)(?:current|old|previous)\s*version\s*[:=]\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
-	versionLabelNewRE = regexp.MustCompile(`(?i)(?:new|latest|next)\s*version\s*[:=]\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
+	updateInfoRE = regexp.MustCompile(`UPDATE_INFO:\s+\S+\s+([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)\s*->\s*([0-9a-zA-Z][0-9a-zA-Z.+~_-]*)`)
 
 	statusSuccessRE = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)successfully finished processing`),
@@ -99,30 +95,7 @@ func deriveVersions(text, pkg string) (string, string) {
 		if ok {
 			return oldVer, newVer
 		}
-		oldVer, newVer, ok = parseVersionFromTo(line, pkg)
-		if ok {
-			return oldVer, newVer
-		}
-		oldVer, newVer, ok = parseVersionArrow(line, pkg)
-		if ok {
-			return oldVer, newVer
-		}
 	}
-
-	var oldVer string
-	var newVer string
-	for _, line := range lines {
-		if oldVer == "" {
-			oldVer = parseVersionLabel(line, versionLabelOldRE)
-		}
-		if newVer == "" {
-			newVer = parseVersionLabel(line, versionLabelNewRE)
-		}
-		if oldVer != "" && newVer != "" {
-			return oldVer, newVer
-		}
-	}
-
 	return "", ""
 }
 
@@ -147,53 +120,4 @@ func parseUpdateInfo(line string) (string, string, bool) {
 		return "", "", false
 	}
 	return match[1], match[2], true
-}
-
-func parseVersionArrow(line, pkg string) (string, string, bool) {
-	lower := strings.ToLower(line)
-	if !strings.Contains(lower, "->") && !strings.Contains(lower, "=>") {
-		return "", "", false
-	}
-	if pkg != "" && !strings.Contains(lower, strings.ToLower(pkg)) && !strings.Contains(lower, "version") {
-		return "", "", false
-	}
-
-	match := versionArrowRE.FindStringSubmatch(line)
-	if len(match) < 3 {
-		return "", "", false
-	}
-	if strings.Contains(match[1], "/") || strings.Contains(match[2], "/") {
-		return "", "", false
-	}
-	return match[1], match[2], true
-}
-
-func parseVersionFromTo(line, pkg string) (string, string, bool) {
-	lower := strings.ToLower(line)
-	if !strings.Contains(lower, "from") || !strings.Contains(lower, "to") {
-		return "", "", false
-	}
-	if pkg != "" && !strings.Contains(lower, strings.ToLower(pkg)) && !strings.Contains(lower, "version") {
-		return "", "", false
-	}
-
-	match := versionFromToRE.FindStringSubmatch(line)
-	if len(match) < 3 {
-		return "", "", false
-	}
-	if strings.Contains(match[1], "/") || strings.Contains(match[2], "/") {
-		return "", "", false
-	}
-	return match[1], match[2], true
-}
-
-func parseVersionLabel(line string, re *regexp.Regexp) string {
-	match := re.FindStringSubmatch(line)
-	if len(match) < 2 {
-		return ""
-	}
-	if strings.Contains(match[1], "/") {
-		return ""
-	}
-	return match[1]
 }
