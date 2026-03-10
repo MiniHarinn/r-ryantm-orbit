@@ -13,10 +13,13 @@ Static dashboard for r-ryantm / nixpkgs-update logs. Designed to run on GitHub P
 You can find the hosted version here: https://miniharinn.github.io/r-ryantm-orbit/
 
 ## Build & data
+
 Will be avaliable soon! (once the project is stable enough)
 
 ## Contributing
 
-PRs are welcome! Please use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages (e.g., `feat: ...`, `fix: ...`, `refactor: ...`).
+PRs are welcome!
+
+Please use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages (e.g., `feat: ...`, `fix: ...`, `refactor: ...`).
 
 #### Made with ❤️ by @MiniHarinn and (a little less of) his Codex
