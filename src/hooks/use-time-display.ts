@@ -3,8 +3,10 @@ import * as React from "react"
 const STORAGE_KEY = "r-ryantm-orbit:time-display"
 
 const readStoredPreference = () => {
-  if (typeof window === "undefined") return false
-  return window.localStorage.getItem(STORAGE_KEY) === "local"
+  if (typeof window === "undefined") return true
+  const stored = window.localStorage.getItem(STORAGE_KEY)
+  if (stored === null) return true
+  return stored === "local"
 }
 
 export function useTimeDisplay() {

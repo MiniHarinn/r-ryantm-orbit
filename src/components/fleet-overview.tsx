@@ -67,10 +67,21 @@ export default function FleetOverview({
       return
     }
     const formatter = new Intl.DateTimeFormat(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZoneName: "short",
     })
-    setLocalUpdatedAt(formatter.format(parsed))
+    const parts = formatter.formatToParts(parsed)
+    const get = (type: Intl.DateTimeFormatPartTypes) =>
+      parts.find((part) => part.type === type)?.value ?? ""
+    const formatted = `${get("year")}-${get("month")}-${get("day")} ${get(
+      "hour"
+    )}:${get("minute")} ${get("timeZoneName")}`.trim()
+    setLocalUpdatedAt(formatted)
   }, [updatedAt])
 
   React.useEffect(() => {
@@ -222,15 +233,17 @@ export default function FleetOverview({
             
           </div>
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-            <span>UTC</span>
-            <Switch
-              aria-label="Toggle local time"
-              size="sm"
-              checked={showLocalTime}
-              disabled={!localUpdatedAt}
-              onCheckedChange={setShowLocalTime}
-            />
             <span>Local</span>
+            <Switch
+              aria-label="Toggle UTC time"
+              size="sm"
+              checked={!showLocalTime}
+              disabled={!localUpdatedAt}
+              onCheckedChange={(nextChecked) =>
+                setShowLocalTime(!nextChecked)
+              }
+            />
+            <span>UTC</span>
           </div>
         </div>
       </div>
