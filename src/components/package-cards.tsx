@@ -12,13 +12,14 @@ import {
 } from "@tabler/icons-react"
 import { STATUS_META, type PackageFilters } from "@/lib/package-types"
 import {
-  formatDate,
+  formatDateTime,
   logUrl,
   nixSearchUrl,
   type PackageEntry,
 } from "@/lib/package-data"
 import { usePackagePaging } from "@/hooks/use-package-paging"
 import { usePackageSearch } from "@/hooks/use-package-search"
+import { useTimeDisplay } from "@/hooks/use-time-display"
 import { useEffect, useRef, useState } from "react"
 
 type PackageCardsProps = {
@@ -28,7 +29,13 @@ type PackageCardsProps = {
 
 const statusFallback = STATUS_META[-1]
 
-const PackageCard = ({ entry }: { entry: PackageEntry }) => {
+const PackageCard = ({
+  entry,
+  showLocalTime,
+}: {
+  entry: PackageEntry
+  showLocalTime: boolean
+}) => {
   const statusMeta = STATUS_META[entry.status] ?? statusFallback
 
   return (
@@ -38,7 +45,7 @@ const PackageCard = ({ entry }: { entry: PackageEntry }) => {
           <h3 className="wrap-break-word text-base font-semibold">{entry.name}</h3>
           <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
             <IconCalendar className="size-3.5" />
-            {formatDate(entry.date)}
+            {formatDateTime(entry.date, showLocalTime)}
           </p>
         </div>
         <Badge
@@ -102,6 +109,7 @@ export function PackageCards({ filters, onClearFilters }: PackageCardsProps) {
       isSearchMode,
       searchResults,
     })
+  const { showLocalTime } = useTimeDisplay()
 
   const [showLoading, setShowLoading] = useState(false)
   const loadingTimerRef = useRef<number | null>(null)
@@ -161,7 +169,11 @@ export function PackageCards({ filters, onClearFilters }: PackageCardsProps) {
 
       <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {visiblePackages.map((entry) => (
-          <PackageCard key={`${entry.id}-${entry.date}`} entry={entry} />
+          <PackageCard
+            key={`${entry.id}-${entry.date}`}
+            entry={entry}
+            showLocalTime={showLocalTime}
+          />
         ))}
       </div>
 

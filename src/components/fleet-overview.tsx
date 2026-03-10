@@ -20,6 +20,8 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel"
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
+import { useTimeDisplay } from "@/hooks/use-time-display"
 
 export type FleetStats = {
   total: string
@@ -52,6 +54,7 @@ export default function FleetOverview({
   const [canPrev, setCanPrev] = React.useState(false)
   const [canNext, setCanNext] = React.useState(false)
   const [localUpdatedAt, setLocalUpdatedAt] = React.useState("")
+  const { showLocalTime, setShowLocalTime } = useTimeDisplay()
 
   React.useEffect(() => {
     if (!updatedAt) {
@@ -87,6 +90,8 @@ export default function FleetOverview({
     }
   }, [api])
 
+  const resolvedUpdatedAt =
+    showLocalTime && localUpdatedAt ? localUpdatedAt : updatedAt
   return (
     <aside className="w-full rounded-3xl border bg-card p-5 text-card-foreground shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -210,14 +215,24 @@ export default function FleetOverview({
       </Carousel>
 
       <div className="mt-6 rounded-2xl border bg-background px-4 py-3 text-xs text-muted-foreground">
-        Updated At:
-        <span className="text-foreground"> {updatedAt}</span>
-        {localUpdatedAt ? (
-          <span className="text-foreground">
-            {" "}
-            (Local: {localUpdatedAt})
-          </span>
-        ) : null}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span>Updated At:</span>
+            <span className="text-foreground">{resolvedUpdatedAt}</span>
+            
+          </div>
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+            <span>UTC</span>
+            <Switch
+              aria-label="Toggle local time"
+              size="sm"
+              checked={showLocalTime}
+              disabled={!localUpdatedAt}
+              onCheckedChange={setShowLocalTime}
+            />
+            <span>Local</span>
+          </div>
+        </div>
       </div>
     </aside>
   )

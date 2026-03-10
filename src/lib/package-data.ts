@@ -32,10 +32,24 @@ export const rowToPackage = (row: ChunkRow): PackageEntry => ({
   newVersion: row[5] || undefined,
 })
 
-export const formatDate = (ts: number) => new Date(ts * 1000).toISOString().slice(0, 10)
+export const formatDateOnlyUTC = (ts: number) =>
+  new Date(ts * 1000).toISOString().slice(0, 10)
+
+export const formatDateTime = (ts: number, useLocalTime: boolean) => {
+  const date = new Date(ts * 1000)
+  if (Number.isNaN(date.getTime())) return ""
+  const options: Intl.DateTimeFormatOptions = {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }
+  if (!useLocalTime) {
+    options.timeZone = "UTC"
+  }
+  return new Intl.DateTimeFormat(undefined, options).format(date)
+}
 
 export const logUrl = (pkg: string, ts: number) => {
-  const date = formatDate(ts)
+  const date = formatDateOnlyUTC(ts)
   return `https://nixpkgs-update-logs.nix-community.org/${encodeURIComponent(pkg)}/${date}.log`
 }
 
