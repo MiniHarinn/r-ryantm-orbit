@@ -71,7 +71,7 @@ const PackageCard = ({
         ) : (
           <p className="mt-1 inline-flex items-center gap-2 text-sm text-muted-foreground">
             <IconAlertCircle className="size-4" />
-            No version information
+            Triggered by updateScript fetcher
           </p>
         )}
       </div>
