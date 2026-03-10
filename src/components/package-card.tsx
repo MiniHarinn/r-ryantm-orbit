@@ -35,7 +35,7 @@ export function PackageCard({ entry, showLocalTime }: PackageCardProps) {
   const statusMeta = STATUS_META[entry.status] ?? statusFallback
 
   return (
-    <Card className="h-full w-full min-w-0 rounded-2xl border shadow-sm">
+    <Card size="sm" className="h-full w-full min-w-0 rounded-2xl border shadow-sm">
       <CardHeader className="min-w-0 gap-2">
         <CardTitle className="min-w-0">
           <h3 className="break-all text-base font-semibold">{entry.name}</h3>
@@ -76,7 +76,7 @@ export function PackageCard({ entry, showLocalTime }: PackageCardProps) {
         </div>
       </CardContent>
 
-      <CardFooter className="mt-auto flex flex-wrap gap-2">
+      <CardFooter className="mt-auto flex flex-wrap gap-2 px-3 py-2">
         <Button asChild variant="outline" size="sm" className="gap-2">
           <a href={logUrl(entry.name, entry.date)} target="_blank" rel="noreferrer">
             <IconNotes className="size-4" />
