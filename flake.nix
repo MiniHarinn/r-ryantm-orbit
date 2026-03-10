@@ -1,5 +1,5 @@
 {
-  description = "fast-rrytm site generator dev environment";
+  description = "Dev / CI environment for r-ryantm-orbit project.";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
