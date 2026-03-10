@@ -18,20 +18,18 @@ type FilterBarProps = {
 
 export function FilterBar({ value, onChange }: FilterBarProps) {
   const [queryDraft, setQueryDraft] = useState(value.query)
+  const [isEditing, setIsEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
-    setQueryDraft(value.query)
-  }, [value.query])
-
-  useEffect(() => {
+    if (!isEditing) return
     if (queryDraft === value.query) return
     const timer = setTimeout(() => {
       onChange({ ...value, query: queryDraft })
     }, 200)
 
     return () => clearTimeout(timer)
-  }, [onChange, queryDraft, value])
+  }, [isEditing, onChange, queryDraft, value])
 
   return (
     <section className="w-full rounded-2xl border bg-card p-5 text-card-foreground shadow-sm">
@@ -45,8 +43,18 @@ export function FilterBar({ value, onChange }: FilterBarProps) {
             <Input
               ref={inputRef}
               placeholder="Package name"
-              value={queryDraft}
+              value={isEditing ? queryDraft : value.query}
               onChange={(event) => setQueryDraft(event.target.value)}
+              onFocus={() => {
+                setIsEditing(true)
+                setQueryDraft(value.query)
+              }}
+              onBlur={() => {
+                if (queryDraft !== value.query) {
+                  onChange({ ...value, query: queryDraft })
+                }
+                setIsEditing(false)
+              }}
             />
             {queryDraft.trim().length > 0 ? (
               <button

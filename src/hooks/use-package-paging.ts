@@ -83,7 +83,7 @@ export const usePackagePaging = ({
       setBrowsePackages((prev) => [...prev, ...packages])
       browseChunkRef.current += 1
       return true
-    } catch (error) {
+    } catch {
       setLoadError("Unable to load package data.")
       setHasMoreState(false)
       return false
@@ -138,7 +138,7 @@ export const usePackagePaging = ({
       if (searchCursorRef.current >= searchResults.length) {
         setHasMoreState(false)
       }
-    } catch (error) {
+    } catch {
       setLoadError("Unable to load search results.")
       setHasMoreState(false)
     } finally {
@@ -290,7 +290,14 @@ export const usePackagePaging = ({
         ? source
         : source.filter((entry) => entry.status === filters.status)
     return isSearchMode ? sortPackages(filtered, filters.sort) : filtered
-  }, [browsePackages, filters.sort, filters.status, isSearchMode, searchPackages])
+  }, [
+    browsePackages,
+    browseResetPending,
+    filters.sort,
+    filters.status,
+    isSearchMode,
+    searchPackages,
+  ])
 
   useEffect(() => {
     if (isSearchMode) return

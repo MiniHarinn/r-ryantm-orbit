@@ -34,7 +34,7 @@ export const usePackageSearch = (query: string) => {
         miniSearch.addAll(docs)
         miniSearchRef.current = miniSearch
         setSearchReady(true)
-      } catch (error) {
+      } catch {
         if (active) {
           setSearchError("Unable to load search index.")
         }
