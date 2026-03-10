@@ -1,22 +1,11 @@
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { PackageCard } from "@/components/package-card"
 import {
-  IconCalendar,
-  IconArrowRight,
-  IconNotes,
-  IconExternalLink,
   IconLoader2,
   IconConfetti,
   IconZoomCancel,
-  IconAlertCircle,
 } from "@tabler/icons-react"
-import { STATUS_META, type PackageFilters } from "@/lib/package-types"
-import {
-  formatDateTime,
-  logUrl,
-  nixSearchUrl,
-  type PackageEntry,
-} from "@/lib/package-data"
+import { type PackageFilters } from "@/lib/package-types"
 import { usePackagePaging } from "@/hooks/use-package-paging"
 import { usePackageSearch } from "@/hooks/use-package-search"
 import { useTimeDisplay } from "@/hooks/use-time-display"
@@ -25,73 +14,6 @@ import { useEffect, useRef, useState } from "react"
 type PackageCardsProps = {
   filters: PackageFilters
   onClearFilters: () => void
-}
-
-const statusFallback = STATUS_META[-1]
-
-const PackageCard = ({
-  entry,
-  showLocalTime,
-}: {
-  entry: PackageEntry
-  showLocalTime: boolean
-}) => {
-  const statusMeta = STATUS_META[entry.status] ?? statusFallback
-
-  return (
-    <article className="flex h-full w-full min-w-0 flex-col gap-3 rounded-2xl border bg-card p-4 text-card-foreground shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <h3 className="wrap-break-word text-base font-semibold">{entry.name}</h3>
-          <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-            <IconCalendar className="size-3.5" />
-            {formatDateTime(entry.date, showLocalTime)}
-          </p>
-        </div>
-        <Badge
-          variant="outline"
-          className={`shrink-0 px-3 py-1 text-[11px] uppercase tracking-[0.2em] ${statusMeta.className}`}
-        >
-          {statusMeta.label}
-        </Badge>
-      </div>
-
-      <div className="rounded-2xl border bg-background px-3 py-2">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-          Version change
-        </p>
-        {entry.oldVersion &&
-        entry.newVersion &&
-        !(entry.oldVersion === "0" && entry.newVersion === "1") ? (
-          <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold">
-            {entry.oldVersion}
-            <IconArrowRight className="size-4 text-muted-foreground" />
-            {entry.newVersion}
-          </p>
-        ) : (
-          <p className="mt-1 inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <IconAlertCircle className="size-4" />
-            Triggered by updateScript fetcher
-          </p>
-        )}
-      </div>
-
-      <div className="mt-auto flex flex-wrap gap-2">
-        <Button asChild variant="outline" size="sm" className="gap-2">
-          <a href={logUrl(entry.name, entry.date)} target="_blank" rel="noreferrer">
-            <IconNotes className="size-4" />
-            View log
-          </a>
-        </Button>
-        <Button asChild variant="outline" size="sm" className="gap-2">
-          <a href={nixSearchUrl(entry.name)} target="_blank" rel="noreferrer">
-            <IconExternalLink className="size-4" />
-            Nix Search
-          </a>
-        </Button>
-      </div>
-    </article>
-  )
 }
 
 export function PackageCards({ filters, onClearFilters }: PackageCardsProps) {
