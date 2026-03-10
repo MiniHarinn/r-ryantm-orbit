@@ -35,10 +35,13 @@ export function PackageCard({ entry, showLocalTime }: PackageCardProps) {
   const statusMeta = STATUS_META[entry.status] ?? statusFallback
 
   return (
-    <Card size="sm" className="h-full w-full min-w-0 rounded-2xl border shadow-sm">
+    <Card
+      size="sm"
+      className="h-full w-full min-w-0 rounded-2xl border shadow-sm"
+    >
       <CardHeader className="min-w-0 gap-2">
         <CardTitle className="min-w-0">
-          <h3 className="break-all text-base font-semibold">{entry.name}</h3>
+          <h3 className="text-base font-semibold break-all">{entry.name}</h3>
         </CardTitle>
         <CardDescription className="inline-flex items-center gap-2 text-xs">
           <IconCalendar className="size-3.5" />
@@ -47,7 +50,7 @@ export function PackageCard({ entry, showLocalTime }: PackageCardProps) {
         <CardAction>
           <Badge
             variant="outline"
-            className={`shrink-0 px-3 py-1 text-[11px] uppercase tracking-[0.2em] ${statusMeta.className}`}
+            className={`shrink-0 px-3 py-1 text-[11px] tracking-[0.2em] uppercase ${statusMeta.className}`}
           >
             {statusMeta.label}
           </Badge>
@@ -56,7 +59,7 @@ export function PackageCard({ entry, showLocalTime }: PackageCardProps) {
 
       <CardContent>
         <div className="rounded-2xl border bg-background px-3 py-2">
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
             Version change
           </p>
           {entry.oldVersion &&
@@ -78,7 +81,11 @@ export function PackageCard({ entry, showLocalTime }: PackageCardProps) {
 
       <CardFooter className="mt-auto flex flex-wrap gap-2 px-3 py-2">
         <Button asChild variant="outline" size="sm" className="gap-2">
-          <a href={logUrl(entry.name, entry.date)} target="_blank" rel="noreferrer">
+          <a
+            href={logUrl(entry.name, entry.date)}
+            target="_blank"
+            rel="noreferrer"
+          >
             <IconNotes className="size-4" />
             View log
           </a>

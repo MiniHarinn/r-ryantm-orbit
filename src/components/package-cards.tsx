@@ -1,10 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { PackageCard } from "@/components/package-card"
-import {
-  IconLoader2,
-  IconConfetti,
-  IconZoomCancel,
-} from "@tabler/icons-react"
+import { IconLoader2, IconConfetti, IconZoomCancel } from "@tabler/icons-react"
 import { type PackageFilters } from "@/lib/package-types"
 import { usePackagePaging } from "@/hooks/use-package-paging"
 import { usePackageSearch } from "@/hooks/use-package-search"
@@ -45,15 +41,22 @@ export function PackageCards({ filters, onClearFilters }: PackageCardsProps) {
       {!activeError && !isLoading && visiblePackages.length === 0 ? (
         <div className="rounded-2xl border bg-card px-4 py-6 text-sm text-muted-foreground">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="inline-flex items-center gap-2">
-            <IconZoomCancel className="size-4" />
-            {isSearchMode ? "No results match your search yet." : "No packages to display."}
-          </span>
-          {hasActiveFilters ? (
-            <Button type="button" variant="outline" size="sm" onClick={onClearFilters}>
-              Clear filters
-            </Button>
-          ) : null}
+            <span className="inline-flex items-center gap-2">
+              <IconZoomCancel className="size-4" />
+              {isSearchMode
+                ? "No results match your search yet."
+                : "No packages to display."}
+            </span>
+            {hasActiveFilters ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onClearFilters}
+              >
+                Clear filters
+              </Button>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -69,7 +72,7 @@ export function PackageCards({ filters, onClearFilters }: PackageCardsProps) {
       </div>
 
       {isLoading ? (
-        <div className="rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground animate-in fade-in fill-mode-both delay-150">
+        <div className="animate-in rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground delay-150 fill-mode-both fade-in">
           <span className="inline-flex items-center gap-2">
             <IconLoader2 className="size-4 animate-spin" />
             Loading packages...
@@ -86,7 +89,9 @@ export function PackageCards({ filters, onClearFilters }: PackageCardsProps) {
         </div>
       ) : null}
 
-      {hasMore ? <div ref={sentinelRef} className="h-4" aria-hidden="true" /> : null}
+      {hasMore ? (
+        <div ref={sentinelRef} className="h-4" aria-hidden="true" />
+      ) : null}
     </section>
   )
 }

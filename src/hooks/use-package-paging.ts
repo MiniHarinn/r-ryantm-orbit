@@ -65,7 +65,7 @@ export const usePackagePaging = ({
     const chunkIndex = browseChunkRef.current
     try {
       const res = await fetch(
-        `${import.meta.env.BASE_URL}/data/browse/${filters.sort}/chunk-${chunkIndex}.json`,
+        `${import.meta.env.BASE_URL}/data/browse/${filters.sort}/chunk-${chunkIndex}.json`
       )
       if (!res.ok) {
         if (res.status === 404) {
@@ -106,12 +106,18 @@ export const usePackagePaging = ({
     setLoadError(null)
 
     try {
-      const chunkIds = Array.from(new Set(page.map((result) => result.lookupChunk)))
-      const missingChunks = chunkIds.filter((chunkId) => !lookupCacheRef.current.has(chunkId))
+      const chunkIds = Array.from(
+        new Set(page.map((result) => result.lookupChunk))
+      )
+      const missingChunks = chunkIds.filter(
+        (chunkId) => !lookupCacheRef.current.has(chunkId)
+      )
 
       await Promise.all(
         missingChunks.map(async (chunkId) => {
-          const res = await fetch(`${import.meta.env.BASE_URL}/data/lookup/chunk-${chunkId}.json`)
+          const res = await fetch(
+            `${import.meta.env.BASE_URL}/data/lookup/chunk-${chunkId}.json`
+          )
           if (!res.ok) {
             throw new Error(`Failed to load lookup chunk ${chunkId}`)
           }
@@ -280,7 +286,13 @@ export const usePackagePaging = ({
       window.removeEventListener("keydown", onKeydown)
       window.removeEventListener("resize", scheduleLoadIfNeeded)
     }
-  }, [canLoadMore, drainBrowseWhileInView, isSearchMode, isSentinelInView, loadSearchPage])
+  }, [
+    canLoadMore,
+    drainBrowseWhileInView,
+    isSearchMode,
+    isSentinelInView,
+    loadSearchPage,
+  ])
 
   const visiblePackages = useMemo(() => {
     if (browseResetPending) return []
@@ -305,7 +317,13 @@ export const usePackagePaging = ({
     if (visiblePackages.length >= MIN_FILTERED_VISIBLE) return
     if (!canLoadMore()) return
     void loadBrowseChunk()
-  }, [canLoadMore, filters.status, isSearchMode, loadBrowseChunk, visiblePackages.length])
+  }, [
+    canLoadMore,
+    filters.status,
+    isSearchMode,
+    loadBrowseChunk,
+    visiblePackages.length,
+  ])
 
   return {
     visiblePackages,

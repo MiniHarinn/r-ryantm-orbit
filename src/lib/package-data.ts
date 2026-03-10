@@ -67,7 +67,11 @@ export const sortPackages = (
     return [...packages].sort((a, b) => b.name.localeCompare(a.name))
   }
   if (sort === "date-asc") {
-    return [...packages].sort((a, b) => a.date - b.date || a.name.localeCompare(b.name))
+    return [...packages].sort(
+      (a, b) => a.date - b.date || a.name.localeCompare(b.name)
+    )
   }
-  return [...packages].sort((a, b) => b.date - a.date || a.name.localeCompare(b.name))
+  return [...packages].sort(
+    (a, b) => b.date - a.date || a.name.localeCompare(b.name)
+  )
 }

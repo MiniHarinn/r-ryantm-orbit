@@ -107,7 +107,7 @@ export default function FleetOverview({
     <aside className="w-full rounded-3xl border bg-card p-5 text-card-foreground shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <p className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+          <p className="inline-flex items-center gap-2 text-xs tracking-[0.3em] text-muted-foreground uppercase">
             <IconActivity className="size-4" />
             Status snapshot
           </p>
@@ -147,36 +147,36 @@ export default function FleetOverview({
           <CarouselItem>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="rounded-2xl border bg-background p-4">
-                <p className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="inline-flex items-center gap-1 text-[10px] tracking-[0.18em] whitespace-nowrap text-muted-foreground uppercase">
                   <IconStack2 className="size-3" />
                   Total
                 </p>
                 <p className="mt-2 text-2xl font-semibold">{total}</p>
               </div>
               <div className="rounded-2xl border bg-background p-4">
-                <p className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="inline-flex items-center gap-1 text-[10px] tracking-[0.18em] whitespace-nowrap text-muted-foreground uppercase">
                   <IconCheck className="size-3" />
                   Success
                 </p>
-                <p className="mt-2 text-2xl font-semibold status-success-text">
+                <p className="status-success-text mt-2 text-2xl font-semibold">
                   {success}
                 </p>
               </div>
               <div className="rounded-2xl border bg-background p-4">
-                <p className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="inline-flex items-center gap-1 text-[10px] tracking-[0.18em] whitespace-nowrap text-muted-foreground uppercase">
                   <IconAlertTriangle className="size-3" />
                   Failed
                 </p>
-                <p className="mt-2 text-2xl font-semibold status-error-text">
+                <p className="status-error-text mt-2 text-2xl font-semibold">
                   {failed}
                 </p>
               </div>
               <div className="rounded-2xl border bg-background p-4">
-                <p className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="inline-flex items-center gap-1 text-[10px] tracking-[0.18em] whitespace-nowrap text-muted-foreground uppercase">
                   <IconHandStop className="size-3" />
                   Skipped
                 </p>
-                <p className="mt-2 text-2xl font-semibold status-warning-text">
+                <p className="status-warning-text mt-2 text-2xl font-semibold">
                   {skipped}
                 </p>
               </div>
@@ -185,38 +185,38 @@ export default function FleetOverview({
           <CarouselItem>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="rounded-2xl border bg-background p-4">
-                <p className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="inline-flex items-center gap-1 text-[10px] tracking-[0.18em] whitespace-nowrap text-muted-foreground uppercase">
                   <IconCopy className="size-3" />
                   Duplicate
                 </p>
-                <p className="mt-2 text-2xl font-semibold status-indigo-text">
+                <p className="status-indigo-text mt-2 text-2xl font-semibold">
                   {duplicate}
                 </p>
               </div>
               <div className="rounded-2xl border bg-background p-4">
-                <p className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="inline-flex items-center gap-1 text-[10px] tracking-[0.18em] whitespace-nowrap text-muted-foreground uppercase">
                   <IconMinus className="size-3" />
                   No change
                 </p>
-                <p className="mt-2 text-2xl font-semibold status-nochange-text">
+                <p className="status-nochange-text mt-2 text-2xl font-semibold">
                   {noChange}
                 </p>
               </div>
               <div className="rounded-2xl border bg-background p-4">
-                <p className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="inline-flex items-center gap-1 text-[10px] tracking-[0.18em] whitespace-nowrap text-muted-foreground uppercase">
                   <IconAlertCircle className="size-3" />
                   Invalid
                 </p>
-                <p className="mt-2 text-2xl font-semibold status-invalid-text">
+                <p className="status-invalid-text mt-2 text-2xl font-semibold">
                   {invalid}
                 </p>
               </div>
               <div className="rounded-2xl border bg-background p-4">
-                <p className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="inline-flex items-center gap-1 text-[10px] tracking-[0.18em] whitespace-nowrap text-muted-foreground uppercase">
                   <IconDots className="size-3" />
                   Other
                 </p>
-                <p className="mt-2 text-2xl font-semibold status-other-text">
+                <p className="status-other-text mt-2 text-2xl font-semibold">
                   {other}
                 </p>
               </div>
@@ -230,18 +230,15 @@ export default function FleetOverview({
           <div className="flex flex-wrap items-center gap-2">
             <span>Updated At:</span>
             <span className="text-foreground">{resolvedUpdatedAt}</span>
-            
           </div>
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
             <span>Local</span>
             <Switch
               aria-label="Toggle UTC time"
               size="sm"
               checked={!showLocalTime}
               disabled={!localUpdatedAt}
-              onCheckedChange={(nextChecked) =>
-                setShowLocalTime(!nextChecked)
-              }
+              onCheckedChange={(nextChecked) => setShowLocalTime(!nextChecked)}
             />
             <span>UTC</span>
           </div>

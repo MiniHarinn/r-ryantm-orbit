@@ -10,9 +10,8 @@ const readStoredPreference = () => {
 }
 
 export function useTimeDisplay() {
-  const [showLocalTime, setShowLocalTimeState] = React.useState(
-    readStoredPreference
-  )
+  const [showLocalTime, setShowLocalTimeState] =
+    React.useState(readStoredPreference)
 
   React.useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
@@ -37,7 +36,9 @@ export function useTimeDisplay() {
     setShowLocalTimeState(next)
     if (typeof window === "undefined") return
     window.localStorage.setItem(STORAGE_KEY, next ? "local" : "utc")
-    window.dispatchEvent(new CustomEvent("time-display-change", { detail: next }))
+    window.dispatchEvent(
+      new CustomEvent("time-display-change", { detail: next })
+    )
   }, [])
 
   return { showLocalTime, setShowLocalTime }

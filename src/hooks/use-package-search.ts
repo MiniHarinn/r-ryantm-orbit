@@ -14,7 +14,9 @@ export const usePackageSearch = (query: string) => {
 
     const loadSearchIndex = async () => {
       try {
-        const res = await fetch(`${import.meta.env.BASE_URL}/data/search-index.json`)
+        const res = await fetch(
+          `${import.meta.env.BASE_URL}/data/search-index.json`
+        )
         if (!res.ok) {
           throw new Error("Failed to load search index")
         }
@@ -55,7 +57,9 @@ export const usePackageSearch = (query: string) => {
     }
     if (!searchReady || !miniSearchRef.current) return
 
-    const results = miniSearchRef.current.search(trimmed) as unknown as SearchResult[]
+    const results = miniSearchRef.current.search(
+      trimmed
+    ) as unknown as SearchResult[]
     const resolvedResults = results.map((result) => ({
       id: result.id,
       lookupChunk: result.lookupChunk,
