@@ -36,9 +36,9 @@ export function PackageCard({ entry, showLocalTime }: PackageCardProps) {
 
   return (
     <Card className="h-full w-full min-w-0 rounded-2xl border shadow-sm">
-      <CardHeader className="gap-2">
-        <CardTitle>
-          <h3 className="wrap-break-word text-base font-semibold">{entry.name}</h3>
+      <CardHeader className="min-w-0 gap-2">
+        <CardTitle className="min-w-0">
+          <h3 className="break-all text-base font-semibold">{entry.name}</h3>
         </CardTitle>
         <CardDescription className="inline-flex items-center gap-2 text-xs">
           <IconCalendar className="size-3.5" />
