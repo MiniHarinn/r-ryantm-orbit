@@ -13,14 +13,14 @@
     "typecheck": "astro check"
   },
   "dependencies": {
-    "@astrojs/react": "^4.4.2",
+    "@astrojs/react": "5.0.3",
     "@astrojs/sitemap": "^3.7.2",
     "@fontsource-variable/noto-sans": "^5.2.10",
     "@tabler/icons-react": "^3.40.0",
     "@tailwindcss/vite": "^4.1.18",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "astro": "^5.17.1",
+    "astro": "6.1.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "embla-carousel-react": "^8.6.0",
