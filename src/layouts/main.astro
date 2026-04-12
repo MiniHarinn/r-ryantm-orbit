@@ -1,19 +1,40 @@
 ---
 import "@/styles/global.css"
 import { BackToTop } from "@/components/back-to-top"
+
+const SITE_URL = "https://r-ryantm.harinn.dev"
+const TITLE = "r-ryantm's package orbit"
+const DESCRIPTION =
+  "Track r-ryantm's nixpkgs-update runs across tens of thousands of nixpkgs packages, all in one place."
 ---
 
 <html lang="en" class="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
+
+    <title>{TITLE}</title>
+    <meta name="description" content={DESCRIPTION} />
+    <link rel="canonical" href={SITE_URL + "/"} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={SITE_URL + "/"} />
+    <meta property="og:title" content={TITLE} />
+    <meta property="og:description" content={DESCRIPTION} />
+    <meta property="og:image" content={SITE_URL + "/favicon.png"} />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={TITLE} />
+    <meta name="twitter:description" content={DESCRIPTION} />
+    <meta name="twitter:image" content={SITE_URL + "/favicon.png"} />
+
     <link
       rel="icon"
       type="image/png"
       sizes="32x32"
-      href={`${import.meta.env.BASE_URL}/favicon.png`}
+      href={`${import.meta.env.BASE_URL}favicon.png`}
     />
-    <title>r-ryantm's package orbit</title>
+    <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}favicon.svg`} />
   </head>
   <body class="grid-bg">
     <slot />
