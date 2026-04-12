@@ -14,9 +14,7 @@ export const usePackageSearch = (query: string) => {
 
     const loadSearchIndex = async () => {
       try {
-        const res = await fetch(
-          `${import.meta.env.BASE_URL}/data/search-index.json`
-        )
+        const res = await fetch("/data/search-index.json")
         if (!res.ok) {
           throw new Error("Failed to load search index")
         }
