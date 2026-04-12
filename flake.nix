@@ -20,6 +20,7 @@
             packages = with pkgs; [
               go
               golangci-lint
+              nodejs_24
               bun
               caddy
             ];
