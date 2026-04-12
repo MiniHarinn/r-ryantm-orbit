@@ -4,13 +4,13 @@
 
 # 🪐 r-ryantm's package orbit 🪐
 
-[![Live](https://img.shields.io/badge/live-GitHub%20Pages-0ea5e9?style=for-the-badge&logo=github)](https://miniharinn.github.io/r-ryantm-orbit/)
+[![Live](https://img.shields.io/badge/live-r--ryantm.harinn.dev-0ea5e9?style=for-the-badge&logo=github)](https://r-ryantm.harinn.dev/)
 [![Stars](https://img.shields.io/github/stars/MiniHarinn/r-ryantm-orbit?style=for-the-badge&logo=github)](https://github.com/MiniHarinn/r-ryantm-orbit)
 [![Made with Go](https://img.shields.io/badge/made%20with-Go-00ADD8?style=for-the-badge&logo=go)](https://go.dev/)
 
 Static dashboard for r-ryantm / nixpkgs-update logs. Designed to run on GitHub Pages or any static site host.
 
-You can find the hosted version here: https://miniharinn.github.io/r-ryantm-orbit/
+You can find the hosted version here: https://r-ryantm.harinn.dev/
 
 ## Build & data
 

@@ -6,8 +6,8 @@ import react from "@astrojs/react"
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://miniharinn.github.io",
-  base: "/r-ryantm-orbit",
+  site: "https://r-ryantm.harinn.dev",
+  base: "/",
   vite: {
     plugins: [tailwindcss()],
   },
