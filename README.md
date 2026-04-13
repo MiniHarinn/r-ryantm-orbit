@@ -1,25 +1,32 @@
 <p align="center">
-  <img src="docs/assets/images/favicon.png" alt="r-ryantm orbit icon" width="128" height="128" />
+  <img src="public/favicon.svg" alt="r-ryantm orbit icon" width="128" height="128" />
 </p>
 
-# 🪐 r-ryantm's package orbit 🪐
+<div align="center">
 
-[![Live](https://img.shields.io/badge/live-r--ryantm.harinn.dev-0ea5e9?style=for-the-badge&logo=github)](https://r-ryantm.harinn.dev/)
-[![Stars](https://img.shields.io/github/stars/MiniHarinn/r-ryantm-orbit?style=for-the-badge&logo=github)](https://github.com/MiniHarinn/r-ryantm-orbit)
-[![Made with Go](https://img.shields.io/badge/made%20with-Go-00ADD8?style=for-the-badge&logo=go)](https://go.dev/)
+# r-ryantm's package orbit
 
-Static dashboard for r-ryantm / nixpkgs-update logs. Designed to run on GitHub Pages or any static site host.
+A static dashboard for [nixpkgs-update](https://github.com/r-ryantm/nixpkgs-update) logs, tracking package update attempts by [r-ryantm](https://github.com/r-ryantm) across nixpkgs.
 
-You can find the hosted version here: https://r-ryantm.harinn.dev/
+<p>
+  <a href="https://r-ryantm.harinn.dev/"><img src="https://img.shields.io/badge/live-r--ryantm.harinn.dev-6366f1?style=for-the-badge" alt="Live" height="28" /></a>
+  <a href="https://astro.build"><img src="https://astro.badg.es/v2/built-with-astro/small.svg" alt="Built with Astro" height="28" /></a>
+</p>
+
+</div>
+
+## Overview
+
+Orbit visualizes [nixpkgs-update logs](https://nixpkgs-update-logs.nix-community.org/) as a browsable static site. It pulls update attempt data and renders it into a fast, searchable dashboard — updated every hour and deployable to GitHub Pages or any static host.
 
 ## Build & data
 
-Will be avaliable soon! (once the project is stable enough)
+Will be available soon! (once the project is stable enough)
 
 ## Contributing
 
-PRs are welcome!
+PRs are welcome, this project is a mess. Please use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) though.
 
-Please use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages (e.g., `feat: ...`, `fix: ...`, `refactor: ...`).
+---
 
-#### Made with ❤️ by @MiniHarinn and (a little less of) his Codex
+<p align="center">Made with ❤️ by <a href="https://github.com/MiniHarinn">@MiniHarinn</a> and (a little less of) his Codex</p>
