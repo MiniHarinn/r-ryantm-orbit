@@ -20,19 +20,12 @@ const DESCRIPTION =
     <meta property="og:url" content={Astro.site} />
     <meta property="og:title" content={TITLE} />
     <meta property="og:description" content={DESCRIPTION} />
-    <meta property="og:image" content={new URL("favicon.png", Astro.site)} />
+    <meta property="og:image" content={new URL("favicon.svg", Astro.site)} />
 
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={TITLE} />
     <meta name="twitter:description" content={DESCRIPTION} />
-    <meta name="twitter:image" content={new URL("favicon.png", Astro.site)} />
-
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="/favicon.png"
-    />
+    <meta name="twitter:image" content={new URL("favicon.svg", Astro.site)} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body class="grid-bg">
