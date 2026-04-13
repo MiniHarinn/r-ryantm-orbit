@@ -6,7 +6,7 @@
 
 # r-ryantm's package orbit
 
-A static dashboard for [nixpkgs-update](https://github.com/r-ryantm/nixpkgs-update) logs, tracking package update attempts by [r-ryantm](https://github.com/r-ryantm) across nixpkgs.
+A static dashboard for [nixpkgs-update](https://github.com/nix-community/nixpkgs-update) logs, tracking package update attempts by [r-ryantm](https://github.com/r-ryantm) across nixpkgs.
 
 <p>
   <a href="https://r-ryantm.harinn.dev/"><img src="https://img.shields.io/badge/live-r--ryantm.harinn.dev-6366f1?style=for-the-badge" alt="Live" height="28" /></a>
