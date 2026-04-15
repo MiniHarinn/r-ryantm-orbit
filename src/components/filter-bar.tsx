@@ -70,10 +70,10 @@ export function FilterBar({ value, onChange }: FilterBarProps) {
               <button
                 type="button"
                 className="absolute top-1/2 right-2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border/60 bg-background/70 text-xs text-muted-foreground shadow-sm transition hover:bg-muted/60 hover:text-foreground"
-                onClick={() => {
+                onMouseDown={(e) => {
+                  e.preventDefault()
                   setQueryDraft("")
                   onChange({ ...value, query: "" })
-                  inputRef.current?.focus()
                 }}
                 aria-label="Clear search"
               >
