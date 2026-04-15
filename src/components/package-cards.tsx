@@ -1,10 +1,15 @@
+import { useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { PackageCard } from "@/components/package-card"
 import { IconLoader2, IconConfetti, IconZoomCancel } from "@tabler/icons-react"
 import { type PackageFilters } from "@/lib/package-types"
-import { usePackagePaging } from "@/hooks/use-package-paging"
+import { useBrowsePackages } from "@/hooks/use-browse-packages"
+import { useSearchPackages } from "@/hooks/use-search-packages"
 import { usePackageSearch } from "@/hooks/use-package-search"
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 import { useTimeDisplay } from "@/hooks/use-time-display"
+
+const MIN_FILTERED_VISIBLE = 12
 
 type PackageCardsProps = {
   filters: PackageFilters
@@ -15,20 +20,49 @@ export function PackageCards({ filters, onClearFilters }: PackageCardsProps) {
   const query = filters.query.trim()
   const isSearchMode = query.length > 0
   const hasActiveFilters =
-    filters.query.trim().length > 0 ||
-    filters.status !== "all" ||
-    filters.sort !== "date-desc"
+    query.length > 0 || filters.status !== "all" || filters.sort !== "date-desc"
 
   const { searchResults, searchError } = usePackageSearch(query)
-  const { visiblePackages, isLoading, hasMore, loadError, sentinelRef } =
-    usePackagePaging({
-      filters,
-      isSearchMode,
-      searchResults,
-    })
-  const { showLocalTime } = useTimeDisplay()
 
-  const activeError = loadError ?? searchError
+  const browse = useBrowsePackages(filters, !isSearchMode)
+  const search = useSearchPackages(searchResults, isSearchMode)
+
+  const active = isSearchMode ? search : browse
+  const { sentinelRef } = useInfiniteScroll(
+    active.hasNextPage,
+    active.isFetchingNextPage,
+    active.fetchNextPage
+  )
+
+  const visiblePackages = useMemo(() => {
+    const source = active.allPackages
+    const filtered =
+      filters.status === "all"
+        ? source
+        : source.filter((entry) => entry.status === filters.status)
+    return filtered
+  }, [active.allPackages, filters.status, filters.sort, isSearchMode])
+
+  // Auto-load more when status filter yields too few visible results
+  useEffect(() => {
+    if (isSearchMode) return
+    if (filters.status === "all") return
+    if (visiblePackages.length >= MIN_FILTERED_VISIBLE) return
+    if (!browse.hasNextPage || browse.isFetchingNextPage) return
+    browse.fetchNextPage()
+  }, [
+    isSearchMode,
+    filters.status,
+    visiblePackages.length,
+    browse.hasNextPage,
+    browse.isFetchingNextPage,
+    browse.fetchNextPage,
+  ])
+
+  const { showLocalTime } = useTimeDisplay()
+  const activeError = active.error ?? searchError
+  const isLoading = active.isLoading || active.isFetchingNextPage
+  const hasMore = active.hasNextPage
 
   return (
     <section className="space-y-4">

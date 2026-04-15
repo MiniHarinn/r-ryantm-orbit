@@ -22,7 +22,7 @@ export const usePackageSearch = (query: string) => {
         if (!active) return
         const miniSearch = new MiniSearch<SearchDoc>({
           fields: ["name"],
-          storeFields: ["id", "status", "date", "lookupChunk"],
+          storeFields: ["id", "name", "status", "date", "lookupChunk"],
         })
         const docs = rows.map((row) => ({
           id: row[0],
@@ -55,9 +55,17 @@ export const usePackageSearch = (query: string) => {
     }
     if (!searchReady || !miniSearchRef.current) return
 
-    const results = miniSearchRef.current.search(
-      trimmed
-    ) as unknown as SearchResult[]
+    const lowerQuery = trimmed.toLowerCase()
+    const results = miniSearchRef.current.search(trimmed, {
+      prefix: true,
+      fuzzy: 0.2,
+      boostDocument: (_id, _term, doc) => {
+        const name = (doc as unknown as SearchDoc).name.toLowerCase()
+        if (name === lowerQuery) return 10
+        if (name.startsWith(lowerQuery)) return 5
+        return 1
+      },
+    }) as unknown as SearchResult[]
     const resolvedResults = results.map((result) => ({
       id: result.id,
       lookupChunk: result.lookupChunk,

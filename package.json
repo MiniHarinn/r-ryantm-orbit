@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@astrojs/react": "5.0.3",
+    "@tanstack/react-query": "^5.80.7",
     "@astrojs/sitemap": "^3.7.2",
     "@fontsource-variable/noto-sans": "^5.2.10",
     "@tabler/icons-react": "^3.40.0",
@@ -31,6 +32,7 @@
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-intersection-observer": "^9.16.0",
     "shadcn": "^4.0.1",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.1.18",
